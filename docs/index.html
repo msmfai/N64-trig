@@ -4,108 +4,48 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>N64 trig results</title>
-<meta name="description" content="S5C6 sine/cosine for the N64 against Silas's folded polynomial, LUTX16 and Super Mario 64's sine table, measured in HackerSM64 on ares.">
 <style>
-:root {
-  --bg: #fbfaf8; --fg: #1d1d1f; --muted: #5f6368; --line: #e3e1dc; --card: #ffffff;
-  --accent: #2f6fd6; --pos: #c2463b; --neg: #2e8b57; --bar: #d9e4f7;
-}
+:root { --bg: #ffffff; --fg: #1d1d1f; --muted: #5f6368; --line: #dddddd; }
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --bg: #151517; --fg: #ececee; --muted: #a0a3a8; --line: #2c2c30; --card: #1d1d20;
-    --accent: #7aa7f0; --pos: #ef7f73; --neg: #6cc58f; --bar: #2a3a57;
-  }
+  :root:not([data-theme="light"]) { --bg: #161618; --fg: #e8e8ea; --muted: #a0a3a8; --line: #333336; }
 }
-:root[data-theme="dark"] {
-  --bg: #151517; --fg: #ececee; --muted: #a0a3a8; --line: #2c2c30; --card: #1d1d20;
-  --accent: #7aa7f0; --pos: #ef7f73; --neg: #6cc58f; --bar: #2a3a57;
-}
-* { box-sizing: border-box; }
-body { margin: 0; background: var(--bg); color: var(--fg);
-  font: 16px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-main { max-width: 860px; margin: 0 auto; padding: 32px 16px 64px; }
-h1 { font-size: 1.9rem; margin: 0 0 4px; letter-spacing: -0.01em; }
-h2 { font-size: 1.25rem; margin: 40px 0 10px; }
-p, li { color: var(--fg); }
-.sub { color: var(--muted); margin: 0 0 20px; }
-.status { border-left: 3px solid var(--accent); background: var(--card); padding: 10px 14px; border-radius: 4px; }
-.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin: 20px 0; }
-.card { background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; }
-.card b { display: block; font-size: 1.35rem; margin-bottom: 2px; }
-.card span { color: var(--muted); font-size: 0.92rem; }
-.scroll { overflow-x: auto; }
-table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; font-size: 0.95rem; }
-th, td { text-align: right; padding: 7px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
-th:first-child, td:first-child { text-align: left; }
-th { color: var(--muted); font-weight: 600; font-size: 0.85rem; }
-.p { color: var(--pos); } .n { color: var(--neg); }
-.range { position: relative; height: 18px; min-width: 160px; }
-.range .axis { position: absolute; left: 50%; top: 0; bottom: 0; border-left: 1px dashed var(--muted); }
-.range .span { position: absolute; top: 5px; height: 8px; background: var(--bar); border-radius: 4px; }
-.range .dot { position: absolute; top: 3px; width: 12px; height: 12px; margin-left: -6px; border-radius: 50%; background: var(--accent); }
-.note { color: var(--muted); font-size: 0.9rem; }
-code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.9em; }
-a { color: var(--accent); }
+:root[data-theme="dark"] { --bg: #161618; --fg: #e8e8ea; --muted: #a0a3a8; --line: #333336; }
+body { margin: 0; background: var(--bg); color: var(--fg); font: 15px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; }
+main { max-width: 760px; margin: 0 auto; padding: 24px 16px 48px; }
+p { margin: 0 0 12px; }
+.scroll { overflow-x: auto; margin: 0 0 12px; }
+table { border-collapse: collapse; font-variant-numeric: tabular-nums; }
+th, td { text-align: right; padding: 3px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+th:first-child, td:first-child { text-align: left; padding-left: 0; }
+th { color: var(--muted); font-weight: normal; }
+.m { color: var(--muted); }
+a { color: inherit; }
 </style>
 </head>
 <body>
 <main>
-<h1>N64 trig: S5C6 against the SM64 table</h1>
-<p class="sub">A sine/cosine kernel for the VR4300, measured in-game in HackerSM64 on ares v148.
-Source, data and how to reproduce: <a href="https://github.com/msmfai/N64-trig">github.com/msmfai/N64-trig</a>.</p>
+<p>S5C6 sin/cos for the VR4300. HackerSM64 (clang 21) on ares v148. Not measured on a console. Source and data: <a href="https://github.com/msmfai/N64-trig">github.com/msmfai/N64-trig</a>.</p>
 
-<p class="status"><b>Emulator results only.</b> Nothing here has been measured on a console. ares charges flat cache-miss costs and has no pipeline model; see the caveats at the end.</p>
-
-<div class="cards">
-  <div class="card"><b>A tie</b><span>Every kernel against SM64's table in ares: −3% to +2% depending on code layout, averaging close to zero.</span></div>
-  <div class="card"><b>~10% cheaper</b><span>S5C6's instruction cost against Silas's folded polynomial, at every layout tested.</span></div>
-  <div class="card"><b>13× more accurate</b><span>than Silas (max error 1.45e-5 against 1.9e-4) and 100× more than the 4096-step table.</span></div>
-</div>
-
-<h2>The kernel</h2>
-<p>S5C6 folds the angle to within 45° of the nearest quarter turn, then evaluates an odd degree-5 sine or an even degree-6 cosine. The two are fitted together, so the average of sin² + cos² − 1 over all 65536 angles is zero and they meet exactly at 45°. The two highest-order coefficients have only 8 significant bits, so each is built in the code with one <code>lui</code>. The other four fit in one 16-byte cache line. Cosine is <code>trig_sin(angle + 0x4000)</code>: the add is exact, so it is bit-identical to a dedicated cosine.</p>
 <div class="scroll"><table>
-<tr><th></th><th>S5C6</th><th>Silas (folded)</th><th>SM64 table</th></tr>
-<tr><td>Max error, all angles</td><td>1.45e-5</td><td>1.9e-4</td><td>1.4e-3</td></tr>
-<tr><td>Max |sin² + cos² − 1|</td><td>1.7e-7</td><td>7.1e-8</td><td>–</td></tr>
-<tr><td>Instructions, sine / cosine</td><td>24 / 27</td><td>28 / 25 (with <code>sqrt.s</code>)</td><td>1 load</td></tr>
-<tr><td>Data</td><td>16 B, one line</td><td>none</td><td>20 KB, 1280 lines</td></tr>
-<tr><td>Tiny angles</td><td>correct</td><td>sine 0 at angles 1–2</td><td>–</td></tr>
+<tr><th></th><th>S5C6</th><th>Silas</th><th>SM64 table</th></tr>
+<tr><td>max error</td><td>1.45e-5</td><td>1.9e-4</td><td>1.4e-3</td></tr>
+<tr><td>max |s²+c²−1|</td><td>1.7e-7</td><td>7.1e-8</td><td></td></tr>
+<tr><td>instructions sin/cos</td><td>24/27</td><td>28/25 + sqrt.s</td><td>1 load</td></tr>
+<tr><td>data</td><td>16 B</td><td>0</td><td>20 KB</td></tr>
 </table></div>
 
-<h2>How it was measured</h2>
-<p>A patched HackerSM64 plays SM64's seven attract-mode demos (4304 measured frames, about 440 sine/cosine calls per frame) and records the game's own profiler figure: game-thread CPU time per frame, with audio preemption excluded. Each kernel is built twice. In the <b>table build</b>, <code>sins</code>/<code>coss</code> stay table lookups, but the table is refilled from the kernel at boot. In the <b>call build</b>, every lookup calls the kernel. Both compute bit-identical values, so they play the same game; a hash of Mario's position checks that every frame. Each pair was built at three code layouts (0, 1024 and 4096 bytes of padding).</p>
+<p>Method: 7 attract demos, 4304 frames, ~440 calls/frame. Table build (table refilled from the kernel) vs call build: bit-identical values, same gameplay (position hash). HackerSM64 profiler game-thread time. 3 code layouts.</p>
 
-<h2>Call build minus table build</h2>
-<p class="note">µs of game-thread time per frame. The table builds take about 12,000–12,600 µs. Positive means the kernel is slower. The bar spans the three layouts, and the dot is their mean.</p>
 <div class="scroll"><table>
-<tr><th>Kernel</th><th>pad 0</th><th>pad 1024</th><th>pad 4096</th><th>mean</th><th style="text-align:center">−450 … 0 … +450</th></tr>
-<tr><td>Silas</td><td class="p">+61</td><td class="n">−186</td><td class="p">+234</td><td>+36</td><td><div class="range"><div class="axis"></div><div class="span" style="left:29.3%;width:46.7%"></div><div class="dot" style="left:54.0%"></div></div></td></tr>
-<tr><td>S5C6, constants in code</td><td class="p">+110</td><td class="n">−396</td><td class="p">+199</td><td>−29</td><td><div class="range"><div class="axis"></div><div class="span" style="left:6.0%;width:66.1%"></div><div class="dot" style="left:46.8%"></div></div></td></tr>
-<tr><td>S5C6, published kernel</td><td class="p">+107</td><td class="n">−378</td><td class="p">+221</td><td>−17</td><td><div class="range"><div class="axis"></div><div class="span" style="left:8.0%;width:66.6%"></div><div class="dot" style="left:48.1%"></div></div></td></tr>
-<tr><td>LUTX16 (544-byte table)</td><td class="p">+124</td><td class="n">−417</td><td class="p">+211</td><td>−27</td><td><div class="range"><div class="axis"></div><div class="span" style="left:3.7%;width:69.8%"></div><div class="dot" style="left:47.0%"></div></div></td></tr>
+<tr><th>calls − table</th><th>pad 0</th><th>pad 1024</th><th>pad 4096</th><th>cycles/call</th></tr>
+<tr><td>Silas</td><td>+61 µs</td><td>−186</td><td>+234</td><td>~72</td></tr>
+<tr><td>S5C6</td><td>+107 µs</td><td>−378</td><td>+221</td><td>~64</td></tr>
+<tr><td>LUTX16</td><td>+124 µs</td><td>−417</td><td>+211</td><td>~67</td></tr>
 </table></div>
-<p><b>Layout matters more than the method.</b> The swing comes from the I-cache. An inline table lookup is more code at each of the game's call sites than a <code>jal</code>, so the call builds take 40–1190 fewer I-cache misses per frame. How many fewer depends on where everything lands, so a single pair of builds can show either one winning.</p>
 
-<h2>Instruction cost of the calls</h2>
-<p class="note">Cycles per frame: measured time (game and audio threads) minus every cache miss at ares's price.</p>
-<div class="scroll"><table>
-<tr><th>Kernel</th><th>pad 0</th><th>pad 1024</th><th>pad 4096</th><th>per call</th></tr>
-<tr><td>Silas</td><td>31,600</td><td>32,700</td><td>30,600</td><td>≈ 72</td></tr>
-<tr><td>S5C6, constants in code</td><td>28,300</td><td>28,000</td><td>27,200</td><td>≈ 63</td></tr>
-<tr><td>S5C6, published kernel</td><td>27,800</td><td>28,500</td><td>28,400</td><td>≈ 64</td></tr>
-<tr><td>LUTX16</td><td>29,300</td><td>27,700</td><td>31,400</td><td>≈ 67</td></tr>
-</table></div>
-<p>This is the stable result. S5C6 is cheaper than Silas at every layout, because Silas's sine pays for a <code>sqrt.s</code> (about 29 cycles, against about 5 for a multiply).</p>
+<p>Kernel vs table is within layout noise (I-cache; call builds take 40–1190 fewer I misses/frame). S5C6 costs ~10% fewer cycles per call than Silas at every layout.</p>
 
-<h2>What ares can't tell you</h2>
-<ul>
-<li>ares charges a flat 40 cycles per D-cache fill and write-back, and 48 per I-cache fill. On a console, fills compete with the RSP and RDP for RDRAM, so they can cost more during heavy rendering. Counting both caches, the call builds miss less than the table builds in every pair and layout here, so dearer misses would only move the result toward the kernels. By how much needs a console.</li>
-<li>There is no pipeline model, and no early completion of simple multiplies, so instruction costs are approximate too.</li>
-<li>Results were built with clang 21; HackerSM64's default gcc toolchain was not tested.</li>
-</ul>
-
-<p class="note">The fold is Silas Lock's idea. HackerSM64 does not accept AI-generated code; nothing here is offered to it. This project was written with AI assistance (Claude), and every number on this page comes from the scripts and data in the repository. Super Mario 64 is Nintendo's; no ROMs are distributed.</p>
+<p class="m">ares: flat 40/48-cycle miss cost, no pipeline model. Fold: Silas Lock. Written with AI assistance (Claude). No ROMs distributed.</p>
 </main>
 </body>
 </html>
