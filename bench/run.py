@@ -43,7 +43,8 @@ FRAME_US = 1e6 / 30
 PAIRS = [('tsilas', 'silas'), ('tbfsk', 'bfsk'), ('tasilas', 'asilas'), ('tabfsk', 'abfsk'),
          ('tabfskl', 'abfskl'), ('talutx', 'alutx')]
 GROUPS = {'kernels': ['tasilas', 'asilas', 'tabfsk', 'abfsk', 'tabfskl', 'abfskl', 'talutx', 'alutx'],
-          'c': ['tsilas', 'silas', 'tbfsk', 'bfsk']}
+          'c': ['tsilas', 'silas', 'tbfsk', 'bfsk'],
+          'sincos': ['vanilla-sc', 'asilas-sc', 'abfsk-sc', 'abfskl-sc', 'alutx-sc']}
 SETTINGS = """Video
   Driver: None
 Audio
@@ -110,6 +111,8 @@ class Run:
         self.buf += chunk
         while b'\n' in self.buf:
             line, self.buf = self.buf.split(b'\n', 1)
+            if b'TRIGSINCOS ' in line:      # trig_sincos against trig_sin, all 65536 angles
+                print(f"{self.variant}: {line[line.find(b'TRIGSINCOS '):].decode('ascii', 'replace')}", flush=True)
             i = line.find(b'TRIGBENCH ')
             if i < 0:
                 continue
@@ -211,6 +214,13 @@ def report(results):
             line += f'   {(cb - ca) / na / CPU_HZ * 1e6:+.2f} us per call over {na / fa:.0f} calls per frame'
         print(line)
         cache_report(results[table], results[call])
+    if results.get('vanilla-sc'):
+        base = usec(*total(results['vanilla-sc'])[:2])
+        print('\ncombined sin+cos (trig_sincos at the converted call sites) against vanilla-sc (table, same source)')
+        for v, r in results.items():
+            if r and v.endswith('-sc') and v != 'vanilla-sc':
+                t = usec(*total(r)[:2])
+                print(f'  {v:11}{t:9.0f}{t - base:+8.0f} us {100 * (t / base - 1):+5.2f}%')
 
 
 def cache_report(table, call):
@@ -262,7 +272,8 @@ def main():
     ap.add_argument('--out', type=Path, default=REPO / 'work/results.json')
     args = ap.parse_args()
     variants = [w for v in args.variants for w in GROUPS.get(v, [v])]
-    roms = {v: args.hsm64 / f'build-{v}{args.suffix}' / 'us_n64/sm64.z64' for v in variants}
+    tree = lambda v: args.hsm64.with_name(args.hsm64.name + '-sincos') if v.endswith('-sc') else args.hsm64
+    roms = {v: tree(v) / f'build-{v}{args.suffix}' / 'us_n64/sm64.z64' for v in variants}
     missing = [str(p) for p in roms.values() if not p.exists()]
     if missing:
         raise SystemExit('not built: ' + ', '.join(missing))

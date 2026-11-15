@@ -1,0 +1,242 @@
+diff --git a/src/engine/math_util.c b/src/engine/math_util.c
+index 0c8c189f..01c9eaa1 100644
+--- a/src/engine/math_util.c
++++ b/src/engine/math_util.c
+@@ -121,12 +121,10 @@ void mtxf_translate(Mat4 dest, Vec3f b) {
+ /// Build a matrix that rotates around the z axis, then the x axis, then the y axis, and then translates.
+ void mtxf_rotate_zxy_and_translate(Mat4 dest, Vec3f trans, Vec3s rot) {
+     PUPPYPRINT_ADD_COUNTER(gPuppyCallCounter.matrix);
+-    f32 sx   = sins(rot[0]);
+-    f32 cx   = coss(rot[0]);
+-    f32 sy   = sins(rot[1]);
+-    f32 cy   = coss(rot[1]);
+-    f32 sz   = sins(rot[2]);
+-    f32 cz   = coss(rot[2]);
++    f32 sx, cx, sy, cy, sz, cz;
++    sincoss(rot[0], sx, cx);
++    sincoss(rot[1], sy, cy);
++    sincoss(rot[2], sz, cz);
+     f32 sysz = (sy * sz);
+     f32 cycz = (cy * cz);
+     dest[0][0] = ((sysz * sx) + cycz);
+@@ -147,12 +145,10 @@ void mtxf_rotate_zxy_and_translate(Mat4 dest, Vec3f trans, Vec3s rot) {
+ /// Build a matrix that rotates around the x axis, then the y axis, then the z axis, and then translates.
+ UNUSED void mtxf_rotate_xyz_and_translate(Mat4 dest, Vec3f trans, Vec3s rot) {
+     PUPPYPRINT_ADD_COUNTER(gPuppyCallCounter.matrix);
+-    f32 sx   = sins(rot[0]);
+-    f32 cx   = coss(rot[0]);
+-    f32 sy   = sins(rot[1]);
+-    f32 cy   = coss(rot[1]);
+-    f32 sz   = sins(rot[2]);
+-    f32 cz   = coss(rot[2]);
++    f32 sx, cx, sy, cy, sz, cz;
++    sincoss(rot[0], sx, cx);
++    sincoss(rot[1], sy, cy);
++    sincoss(rot[2], sz, cz);
+     dest[0][0] = (cy * cz);
+     dest[0][1] = (cy * sz);
+     dest[0][2] = -sy;
+@@ -173,12 +169,10 @@ UNUSED void mtxf_rotate_xyz_and_translate(Mat4 dest, Vec3f trans, Vec3s rot) {
+ /// Build a matrix that rotates around the z axis, then the x axis, then the y axis, and then translates and multiplies.
+ void mtxf_rotate_zxy_and_translate_and_mul(Vec3s rot, Vec3f trans, Mat4 dest, Mat4 src) {
+     PUPPYPRINT_ADD_COUNTER(gPuppyCallCounter.matrix);
+-    f32 sx = sins(rot[0]);
+-    f32 cx = coss(rot[0]);
+-    f32 sy = sins(rot[1]);
+-    f32 cy = coss(rot[1]);
+-    f32 sz = sins(rot[2]);
+-    f32 cz = coss(rot[2]);
++    f32 sx, cx, sy, cy, sz, cz;
++    sincoss(rot[0], sx, cx);
++    sincoss(rot[1], sy, cy);
++    sincoss(rot[2], sz, cz);
+     Vec3f entry;
+     f32 sysz = (sy * sz);
+     f32 cycz = (cy * cz);
+@@ -204,12 +198,10 @@ void mtxf_rotate_zxy_and_translate_and_mul(Vec3s rot, Vec3f trans, Mat4 dest, Ma
+ /// Build a matrix that rotates around the x axis, then the y axis, then the z axis, and then translates and multiplies.
+ void mtxf_rotate_xyz_and_translate_and_mul(Vec3s rot, Vec3f trans, Mat4 dest, Mat4 src) {
+     PUPPYPRINT_ADD_COUNTER(gPuppyCallCounter.matrix);
+-    f32 sx = sins(rot[0]);
+-    f32 cx = coss(rot[0]);
+-    f32 sy = sins(rot[1]);
+-    f32 cy = coss(rot[1]);
+-    f32 sz = sins(rot[2]);
+-    f32 cz = coss(rot[2]);
++    f32 sx, cx, sy, cy, sz, cz;
++    sincoss(rot[0], sx, cx);
++    sincoss(rot[1], sy, cy);
++    sincoss(rot[2], sz, cz);
+     Vec3f entry;
+     entry[0] = (cy * cz);
+     entry[1] = (cy * sz);
+@@ -247,8 +239,8 @@ void mtxf_lookat(Mat4 mtx, Vec3f from, Vec3f to, s16 roll) {
+     invLength = -(1.0f / MAX(invLength, NEAR_ZERO));
+     dx *= invLength;
+     dz *= invLength;
+-    f32 sr  = sins(roll);
+-    colY[1] = coss(roll);
++    f32 sr;
++    sincoss(roll, sr, colY[1]);
+     colY[0] = ( sr * dz);
+     colY[2] = (-sr * dx);
+     vec3f_diff(colZ, from, to); // to & from are swapped
+@@ -352,7 +344,9 @@ void mtxf_shadow(Mat4 dest, Vec3f upDir, Vec3f pos, Vec3f scale, s16 yaw) {
+     Vec3f lateralDir;
+     Vec3f leftDir;
+     Vec3f forwardDir;
+-    vec3f_set(lateralDir, sins(yaw), 0.0f, coss(yaw));
++    f32 sYaw, cYaw;
++    sincoss(yaw, sYaw, cYaw);
++    vec3f_set(lateralDir, sYaw, 0.0f, cYaw);
+     vec3f_normalize(upDir);
+     vec3f_cross(leftDir, upDir, lateralDir);
+     vec3f_normalize(leftDir);
+@@ -378,7 +372,9 @@ void mtxf_align_terrain_normal(Mat4 dest, Vec3f upDir, Vec3f pos, s16 yaw) {
+     Vec3f lateralDir;
+     Vec3f leftDir;
+     Vec3f forwardDir;
+-    vec3f_set(lateralDir, sins(yaw), 0.0f, coss(yaw));
++    f32 sYaw, cYaw;
++    sincoss(yaw, sYaw, cYaw);
++    vec3f_set(lateralDir, sYaw, 0.0f, cYaw);
+     vec3f_normalize(upDir);
+     vec3f_cross(leftDir, upDir, lateralDir);
+     vec3f_normalize(leftDir);
+@@ -501,8 +497,10 @@ void mtxf_scale_vec3f(Mat4 dest, Mat4 mtx, Vec3f s) {
+     ((s16 *) mtx)[a + 16] = (((s32) b) & 0xFFFF);
+ void mtxf_rotate_xy(Mtx *mtx, s16 angle) {
+     PUPPYPRINT_ADD_COUNTER(gPuppyCallCounter.matrix);
+-    s32 i = (coss(angle) * 0x10000);
+-    s32 j = (sins(angle) * 0x10000);
++    f32 sa, ca;
++    sincoss(angle, sa, ca);
++    s32 i = (ca * 0x10000);
++    s32 j = (sa * 0x10000);
+     f32 *temp = (f32 *)mtx;
+     s32 k;
+     for (k = 0; k < 16; k++) {
+diff --git a/src/game/camera.c b/src/game/camera.c
+index 2c9ae068..f842e690 100644
+--- a/src/game/camera.c
++++ b/src/game/camera.c
+@@ -756,8 +756,10 @@ s16 look_down_slopes(s16 camYaw) {
+     // Default pitch
+     s16 pitch = 0x05B0;
+     // x and z offsets towards the camera
+-    f32 xOff = sMarioCamState->pos[0] + sins(camYaw) * 40.f;
+-    f32 zOff = sMarioCamState->pos[2] + coss(camYaw) * 40.f;
++    f32 sYaw, cYaw;
++    sincoss(camYaw, sYaw, cYaw);
++    f32 xOff = sMarioCamState->pos[0] + sYaw * 40.f;
++    f32 zOff = sMarioCamState->pos[2] + cYaw * 40.f;
+ 
+     f32 floorDY = find_floor(xOff, sMarioCamState->pos[1], zOff, &floor) - sMarioCamState->pos[1];
+ 
+@@ -4330,8 +4332,8 @@ f32 calc_hor_dist(Vec3f a, Vec3f b) {
+ void rotate_in_xz(Vec3f dst, Vec3f src, s16 yaw) {
+     register f32 x = src[0];
+     register f32 z = src[2];
+-    register f32 sy = sins(yaw);
+-    register f32 cy = coss(yaw);
++    f32 sy, cy;
++    sincoss(yaw, sy, cy);
+ 
+     dst[0] = z * sy + x * cy;
+     dst[1] = src[1];
+diff --git a/src/game/mario_actions_moving.c b/src/game/mario_actions_moving.c
+index 493d1bcf..5662a1aa 100644
+--- a/src/game/mario_actions_moving.c
++++ b/src/game/mario_actions_moving.c
+@@ -304,8 +304,10 @@ void apply_slope_accel(struct MarioState *m) {
+ 
+     m->slideYaw = m->faceAngle[1];
+ 
+-    m->slideVelX = m->forwardVel * sins(m->faceAngle[1]);
+-    m->slideVelZ = m->forwardVel * coss(m->faceAngle[1]);
++    f32 sYaw, cYaw;
++    sincoss(m->faceAngle[1], sYaw, cYaw);
++    m->slideVelX = m->forwardVel * sYaw;
++    m->slideVelZ = m->forwardVel * cYaw;
+ 
+     m->vel[0] = m->slideVelX;
+     m->vel[1] = 0.0f;
+diff --git a/src/game/moving_texture.c b/src/game/moving_texture.c
+index 194037c0..939787ec 100644
+--- a/src/game/moving_texture.c
++++ b/src/game/moving_texture.c
+@@ -304,8 +304,10 @@ Gfx *geo_movtex_pause_control(s32 callContext, UNUSED struct GraphNode *node, UN
+ void movtex_make_quad_vertex(Vtx *verts, s32 index, s16 x, s16 y, s16 z, s16 rot, s16 rotOffset,
+                              f32 scale, u8 alpha) {
+     scale = 32.0f * ((32.0f * scale) - 1.0f);
+-    s16 s = scale * sins(rot + rotOffset);
+-    s16 t = scale * coss(rot + rotOffset);
++    f32 sRot, cRot;
++    sincoss(rot + rotOffset, sRot, cRot);
++    s16 s = scale * sRot;
++    s16 t = scale * cRot;
+ 
+     if (gMovtexVtxColor == MOVTEX_VTX_COLOR_YELLOW) {
+         make_vertex(verts, index, x, y, z, s, t, 255, 255, 0, alpha);
+diff --git a/src/game/object_helpers.c b/src/game/object_helpers.c
+index 550eb923..497ef35e 100644
+--- a/src/game/object_helpers.c
++++ b/src/game/object_helpers.c
+@@ -1125,8 +1125,10 @@ void cur_obj_unused_resolve_wall_collisions(f32 offsetY, f32 radius) {
+ }
+ 
+ void cur_obj_move_xz_using_fvel_and_yaw(void) {
+-    o->oVelX = o->oForwardVel * sins(o->oMoveAngleYaw);
+-    o->oVelZ = o->oForwardVel * coss(o->oMoveAngleYaw);
++    f32 sYaw, cYaw;
++    sincoss(o->oMoveAngleYaw, sYaw, cYaw);
++    o->oVelX = o->oForwardVel * sYaw;
++    o->oVelZ = o->oForwardVel * cYaw;
+ 
+     o->oPosX += o->oVelX;
+     o->oPosZ += o->oVelZ;
+@@ -1141,8 +1143,10 @@ void cur_obj_move_y_with_terminal_vel(void) {
+ }
+ 
+ void cur_obj_compute_vel_xz(void) {
+-    o->oVelX = o->oForwardVel * sins(o->oMoveAngleYaw);
+-    o->oVelZ = o->oForwardVel * coss(o->oMoveAngleYaw);
++    f32 sYaw, cYaw;
++    sincoss(o->oMoveAngleYaw, sYaw, cYaw);
++    o->oVelX = o->oForwardVel * sYaw;
++    o->oVelZ = o->oForwardVel * cYaw;
+ }
+ 
+ f32 increment_velocity_toward_range(f32 value, f32 center, f32 zeroThreshold, f32 increment) {
+diff --git a/src/game/rendering_graph_node.c b/src/game/rendering_graph_node.c
+index 43144b5d..08c7df02 100644
+--- a/src/game/rendering_graph_node.c
++++ b/src/game/rendering_graph_node.c
+@@ -896,8 +896,8 @@ void geo_process_shadow(struct GraphNodeShadow *node) {
+             gCurrAnimAttribute -= 6;
+ 
+             // simple matrix rotation so the shadow offset rotates along with the object
+-            f32 sinAng = sins(gCurGraphNodeObject->angle[1]);
+-            f32 cosAng = coss(gCurGraphNodeObject->angle[1]);
++            f32 sinAng, cosAng;
++            sincoss(gCurGraphNodeObject->angle[1], sinAng, cosAng);
+ 
+             shadowPos[0] += animOffset[0] * cosAng + animOffset[2] * sinAng;
+             shadowPos[2] += -animOffset[0] * sinAng + animOffset[2] * cosAng;
+diff --git a/src/game/screen_transition.c b/src/game/screen_transition.c
+index 4b82cb37..2f00f898 100644
+--- a/src/game/screen_transition.c
++++ b/src/game/screen_transition.c
+@@ -40,8 +40,10 @@ void make_tex_transition_vertex(Vtx *verts, s32 n, f32 centerTransX, f32 centerT
+                                 f32 vertX, f32 vertY, s16 tx, s16 ty) {
+     // Rotate around the center
+     s16 angle = sTransitionTextureAngle;
+-    f32 x = vertX * coss(angle) - vertY * sins(angle) + centerTransX;
+-    f32 y = vertX * sins(angle) + vertY * coss(angle) + centerTransY;
++    f32 sa, ca;
++    sincoss(angle, sa, ca);
++    f32 x = vertX * ca - vertY * sa + centerTransX;
++    f32 y = vertX * sa + vertY * ca + centerTransY;
+ 
+     s16 roundedX = roundf(x);
+     s16 roundedY = roundf(y);
