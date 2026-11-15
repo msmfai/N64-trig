@@ -7,6 +7,9 @@ First run: clones HackerSM64 at the pinned commit into work/HackerSM64 (or
 --hsm64), copies your US base ROM in, applies hsm64-bench.patch and copies the
 benchmark sources to src/game. Later runs reuse the tree; nothing is deleted.
 Each variant is built into work/HackerSM64/build-<variant>/us_n64/sm64.z64.
+The "-sc" variants (group sincos) need the call sites converted to sincoss()
+(hsm64-sincos.patch), so they get their own tree, work/HackerSM64-sincos,
+with both patches; vanilla-sc is the table baseline from that same source.
 
 Toolchain: by default HackerSM64's own (a MIPS gcc on PATH, see its README).
 --clang BIN_DIR builds with COMPILER=clang instead; the published results were
@@ -18,6 +21,8 @@ PATH, or give their directory with --binutils.
 Variants, as (TRIG_FUNC, TRIG_USE): a "t" prefix is the table build of the
 same values (sins/coss stay table lookups, the table is refilled at boot from
 the kernel), the other is the call build. Compare only the two of a pair.
+A "-sc" variant is the call build with sin and cos of one angle from one
+trig_sincos call; compare it with vanilla-sc.
 Your base ROM and the built ROMs are Nintendo's; do not distribute them.
 """
 import argparse
@@ -31,7 +36,7 @@ HERE = Path(__file__).resolve().parent
 REPO = HERE.parent
 UPSTREAM = 'https://github.com/HackerN64/HackerSM64.git'
 PINNED = '3be00d2f3cf4d1c73e21bf14ae02bbb5e89fcb94'  # 2026-11-11, the results' tree
-# variant: (TRIG_FUNC, TRIG_USE)
+# variant: (TRIG_FUNC, TRIG_USE); "-sc" variants also TRIG_SINCOS=1 (sincos tree)
 VARIANTS = {
     'vanilla': (0, 0),
     # C versions (trig_impl.c)
@@ -41,9 +46,12 @@ VARIANTS = {
     'tabfsk': (5, 0), 'abfsk': (5, 1),       # S5C6, every constant built in code
     'tabfskl': (6, 0), 'abfskl': (6, 1),     # S5C6, four constants loaded from one line
     'talutx': (7, 0), 'alutx': (7, 1),       # LUTX16
+    # combined sin+cos at the converted call sites (hsm64-sincos.patch)
+    'vanilla-sc': (0, 0), 'asilas-sc': (4, 1), 'abfsk-sc': (5, 1), 'abfskl-sc': (6, 1), 'alutx-sc': (7, 1),
 }
 GROUPS = {'kernels': ['tasilas', 'asilas', 'tabfsk', 'abfsk', 'tabfskl', 'abfskl', 'talutx', 'alutx'],
-          'c': ['tsilas', 'silas', 'tbfsk', 'bfsk']}
+          'c': ['tsilas', 'silas', 'tbfsk', 'bfsk'],
+          'sincos': ['vanilla-sc', 'asilas-sc', 'abfsk-sc', 'abfskl-sc', 'alutx-sc']}
 SOURCES = ('trig_impl.c', 'trig_bench.c', 'trig_bench.h', 'trig_kernels.s')
 
 
@@ -51,7 +59,11 @@ def run(cmd, **kw):
     subprocess.run([str(c) for c in cmd], check=True, **kw)
 
 
-def prepare(tree, baserom):
+def sincos_tree(tree):
+    return tree.with_name(tree.name + '-sincos')
+
+
+def prepare(tree, baserom, patches=('hsm64-bench.patch',)):
     if not tree.exists():
         tree.parent.mkdir(parents=True, exist_ok=True)
         run(['git', 'clone', '-q', UPSTREAM, tree])
@@ -60,11 +72,12 @@ def prepare(tree, baserom):
         if baserom is None:
             raise SystemExit('first build: give --baserom (a US Super Mario 64 ROM, .z64)')
         shutil.copy2(baserom, tree / 'baserom.us.z64')
-    patch = HERE / 'hsm64-bench.patch'
-    applied = subprocess.run(['git', '-C', str(tree), 'apply', '--reverse', '--check', str(patch)],
-                             capture_output=True).returncode == 0
-    if not applied:
-        run(['git', '-C', tree, 'apply', patch])
+    for name in patches:
+        patch = HERE / name
+        applied = subprocess.run(['git', '-C', str(tree), 'apply', '--reverse', '--check', str(patch)],
+                                 capture_output=True).returncode == 0
+        if not applied:
+            run(['git', '-C', tree, 'apply', patch])
     for name in SOURCES:
         shutil.copy2(HERE / name, tree / 'src/game' / name)
     shutil.copy2(REPO / 'fit/coeffs.h', tree / 'src/game/trig_coeffs.h')
@@ -91,10 +104,13 @@ def clang_shims(clang, shims):
 
 def build(tree, variant, args, env):
     func, use = VARIANTS[variant]
+    sincos = variant.endswith('-sc')
+    if sincos:
+        tree = sincos_tree(tree)
     out = f'build-{variant}' + ('-count' if args.count else '') + (f'-pad{args.pad}' if args.pad else '')
     cmd = [args.make, '-C', tree, 'VERSION=us', f'BUILD_DIR_BASE={out}', 'TRIG_BENCH=1',
            f'TRIG_FUNC={func}', f'TRIG_USE={use}', 'TRIG_QUANT=1', f'TRIG_COUNT={int(args.count)}',
-           f'TRIG_PAD={args.pad}', f'-j{args.jobs}']
+           f'TRIG_PAD={args.pad}', f'TRIG_SINCOS={int(sincos)}', f'-j{args.jobs}']
     if args.clang:
         cmd.insert(3, 'COMPILER=clang')
     log = tree / f'{out}.log'
@@ -118,7 +134,11 @@ def main():
     ap.add_argument('--jobs', type=int, default=max(1, (os.cpu_count() or 4) - 2))
     args = ap.parse_args()
     tree = args.hsm64.resolve()
+    variants = [w for v in args.variants for w in GROUPS.get(v, [v])]
     prepare(tree, args.baserom)
+    if any(v.endswith('-sc') for v in variants):
+        prepare(sincos_tree(tree), args.baserom or tree / 'baserom.us.z64',
+                ('hsm64-bench.patch', 'hsm64-sincos.patch'))
     path = os.environ['PATH']
     if args.binutils:
         path = f'{args.binutils}:{path}'
@@ -127,7 +147,7 @@ def main():
         clang_shims(args.clang.resolve(), shims)
         path = f'{shims}:{path}'
     env = dict(os.environ, PATH=path)
-    for v in [w for v in args.variants for w in GROUPS.get(v, [v])]:
+    for v in variants:
         build(tree, v, args, env)
 
 

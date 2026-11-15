@@ -18,6 +18,56 @@
 #ifdef TRIG_HSM64
 static void trig_bench_emux_done(void);
 static void trig_bench_emux_progress(s32 demo);
+static void tb_emux_log(const char *text);
+#if TRIG_SITES
+/* Per call site (return address): calls, and calls whose angle is the previous
+ * call's +-0x4000 (the second half of a sin/cos pair). */
+#define TB_SITES 1024
+static u32 sSiteAddr[TB_SITES], sSiteCalls[TB_SITES], sSitePairs[TB_SITES];
+static s32 sSiteLast = -1;
+f32 trig_site(s32 a) {
+    u32 ra = (u32) __builtin_return_address(0);
+    u32 i = (ra >> 2) & (TB_SITES - 1);
+    s32 d = (a - sSiteLast) & 0xFFFF;
+    while (sSiteAddr[i] != 0 && sSiteAddr[i] != ra) {
+        i = (i + 1) & (TB_SITES - 1);
+    }
+    sSiteAddr[i] = ra;
+    sSiteCalls[i]++;
+    if (sSiteLast >= 0 && (d == 0x4000 || d == 0xC000)) {
+        sSitePairs[i]++;
+        sSiteLast = -1;
+    } else {
+        sSiteLast = a;
+    }
+    return trig_sin(a);
+}
+static char *tb_hex(char *p, u32 v) {
+    s32 i;
+    for (i = 28; i >= 0; i -= 4) {
+        *p++ = "0123456789abcdef"[(v >> i) & 15];
+    }
+    *p++ = ' ';
+    return p;
+}
+static void tb_sites_report(void) {
+    static char line[48];
+    u32 i;
+    char *p;
+    for (i = 0; i < TB_SITES; i++) {
+        if (sSiteAddr[i] != 0) {
+            p = line;
+            *p++ = 'S'; *p++ = 'I'; *p++ = 'T'; *p++ = 'E'; *p++ = ' ';
+            p = tb_hex(p, sSiteAddr[i]);
+            p = tb_hex(p, sSiteCalls[i]);
+            p = tb_hex(p, sSitePairs[i]);
+            p[-1] = '\n';
+            *p = 0;
+            tb_emux_log(line);
+        }
+    }
+}
+#endif
 #endif
 
 /* Frames ignored at the start of each demo: level load and fade-in. */
@@ -252,6 +302,28 @@ static void tb_emux_report(void) {
     }
     *p++ = '\n';
     *p = '\0';
+#if TRIG_SITES
+    tb_sites_report();
+#endif
+#if TRIG_SINCOS && TRIG_USE && TRIG_FUNC != 0
+    {
+        static char sl[] = "TRIGSINCOS bad 00000000\n";
+        u32 a, bad = 0;
+        s32 k;
+        for (a = 0; a < 0x10000; a++) {
+            _Complex float sc = trig_sincos(a);
+            f32 s1 = __real__ sc, c1 = __imag__ sc;
+            f32 s0 = trig_sin(a), c0 = trig_sin(a + 0x4000);
+            if (*(u32 *) &s1 != *(u32 *) &s0 || *(u32 *) &c1 != *(u32 *) &c0) {
+                bad++;
+            }
+        }
+        for (k = 0; k < 8; k++) {
+            sl[15 + k] = "0123456789abcdef"[(bad >> (28 - 4 * k)) & 15];
+        }
+        tb_emux_log(sl);
+    }
+#endif
     tb_emux_log(line);
     tb_emux_exit();
 }

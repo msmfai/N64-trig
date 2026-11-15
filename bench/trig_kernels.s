@@ -7,7 +7,9 @@
 #   7  LUTX16: 16-segment table + quadratic (gTrigLutx16, 17 x 32 bytes)
 #
 # float trig_sin(int angle): angle in $a0 (any value; only bits 0-15 matter),
-# result in $f0. Leaf functions, no stack, only caller-saved registers.
+# result in $f0. With TRIG_SINCOS, also _Complex float trig_sincos(int angle):
+# sine in $f0, cosine in $f2, bit-identical to two trig_sin calls (checked in
+# the ROM, trig_bench.c). Leaf functions, no stack, only caller-saved registers.
 #
 # Fold (all kernels): t = angle + 0x2000; x = (t & 0x3FFF) - 0x2000 is the
 # angle's offset from the nearest quarter turn, |x| <= 0x2000 (45 degrees).
@@ -195,5 +197,190 @@ trig_sin:
 #endif
 
     .size   trig_sin, . - trig_sin
+
+#if TRIG_SINCOS
+# _Complex float trig_sincos(int angle): sine in $f0, cosine in $f2, each
+# bit-identical to trig_sin(angle) and trig_sin(angle + 0x4000). One fold;
+# both halves computed. cos(a) = sin(a + 0x4000): the same x, bit 14 flipped,
+# bit 15 flipped when bit 14 was set.
+    .global trig_sincos
+    .type   trig_sincos, @function
+    .balign 32
+trig_sincos:
+
+#if TRIG_FUNC == 4
+# Silas: c from the polynomial, s = sqrt(1 - c*c). Even octants (bit 14 of t
+# clear): sin = s, cos = c; odd: sin = c, cos = s. Sine negates on bit 15 of
+# the angle, cosine on bit 15 of angle + 0x4000.
+    addiu   $t0, $a0, 0x2000
+    andi    $t1, $t0, 0x3fff
+    addiu   $t1, $t1, -0x2000
+    mtc1    $t1, $f0
+    lui     $t3, 0x227c              # K2
+    ori     $t3, $t3, 0x6b4e
+    cvt.s.w $f0, $f0                 # x
+    mtc1    $t3, $f4
+    lui     $t4, 0xb19d              # K1
+    ori     $t4, $t4, 0xd974
+    mtc1    $t4, $f6
+    lui     $t6, 0x3f80              # 1.0
+    mul.s   $f2, $f0, $f0            # x2
+    mtc1    $t6, $f8
+    andi    $t2, $t0, 0x4000
+    mul.s   $f4, $f4, $f2
+    addiu   $t9, $a0, 0x4000
+    add.s   $f4, $f4, $f6
+    andi    $t5, $a0, 0x8000         # sine negates
+    mul.s   $f4, $f4, $f2
+    andi    $t9, $t9, 0x8000         # cosine negates
+    add.s   $f10, $f4, $f8           # c
+    nop
+    mul.s   $f2, $f10, $f10
+    sub.s   $f2, $f8, $f2
+    sqrt.s  $f12, $f2                # s
+    mov.s   $f0, $f12
+    beqz    $t2, 1f
+    mov.s   $f2, $f10
+    mov.s   $f0, $f10
+    mov.s   $f2, $f12
+1:  beqz    $t5, 2f
+    nop
+    neg.s   $f0, $f0
+2:  beqz    $t9, 3f
+    nop
+    neg.s   $f2, $f2
+3:  jr      $ra
+    nop
+
+#elif TRIG_FUNC == 5 || TRIG_FUNC == 6
+# S5C6: S and C both; even octants sin = S, cos = C; odd sin = C, cos = -S;
+# both negate on bit 15 of t.
+    addiu   $t0, $a0, 0x2000
+    andi    $t1, $t0, 0x3fff
+    addiu   $t1, $t1, -0x2000
+    mtc1    $t1, $f0
+#if TRIG_FUNC == 6
+    lui     $t7, %hi(gTrigK)
+#endif
+    lui     $t3, 0x1a97              # S5
+    cvt.s.w $f0, $f0                 # x
+#if TRIG_FUNC == 6
+    addiu   $t7, $t7, %lo(gTrigK)
+#endif
+    mtc1    $t3, $f4
+    lui     $t3, 0x925d              # C6
+    mul.s   $f2, $f0, $f0            # x2
+    mtc1    $t3, $f12
+#if TRIG_FUNC == 5
+    lui     $t3, 0xaa24              # S3
+    ori     $t3, $t3, 0xfee4
+    mtc1    $t3, $f6
+    lui     $t4, 0x2280              # C4
+    ori     $t4, $t4, 0xc3c2
+    mtc1    $t4, $f14
+    lui     $t3, 0x38c9              # S1
+    ori     $t3, $t3, 0x0dd0
+    mtc1    $t3, $f8
+    lui     $t4, 0xb19d              # C2
+    ori     $t4, $t4, 0xe6b5
+    mtc1    $t4, $f16
+#else
+    lwc1    $f6, 4($t7)              # S3
+    lwc1    $f14, 12($t7)            # C4
+    lwc1    $f8, 0($t7)              # S1
+    lwc1    $f16, 8($t7)             # C2
+#endif
+    mul.s   $f4, $f4, $f2
+    lui     $t6, 0x3f80              # 1.0
+    mul.s   $f12, $f12, $f2
+    mtc1    $t6, $f10
+    add.s   $f4, $f4, $f6
+    add.s   $f12, $f12, $f14
+    mul.s   $f4, $f4, $f2
+    andi    $t2, $t0, 0x4000
+    mul.s   $f12, $f12, $f2
+    andi    $t5, $t0, 0x8000
+    add.s   $f4, $f4, $f8
+    add.s   $f12, $f12, $f16
+    mul.s   $f4, $f4, $f0            # S
+    nop
+    mul.s   $f12, $f12, $f2
+    nop
+    add.s   $f12, $f12, $f10         # C
+    beqz    $t2, 1f
+    nop
+    mov.s   $f6, $f4
+    mov.s   $f4, $f12
+    neg.s   $f12, $f6
+1:  beqz    $t5, 2f
+    mov.s   $f0, $f4
+    neg.s   $f0, $f4
+    neg.s   $f12, $f12
+2:  jr      $ra
+    mov.s   $f2, $f12
+
+#elif TRIG_FUNC == 7
+# LUTX16: both lines of the node. Even octants: sin = the sine line, negated
+# on bit 15 ^ (x < 0); cos = the cosine line, negated on bit 15. Odd: sin =
+# the cosine line, negated on bit 15; cos = the sine line, negated on
+# !bit 15 ^ (x < 0).
+    addiu   $t0, $a0, 0x2000
+    andi    $t1, $t0, 0x3fff
+    addiu   $t1, $t1, -0x2000        # x
+    sra     $t7, $t1, 31
+    xor     $t1, $t1, $t7
+    subu    $t1, $t1, $t7            # |x|
+    addiu   $t8, $t1, 256
+    sra     $t8, $t8, 9              # i
+    sll     $t9, $t8, 9
+    subu    $t9, $t1, $t9            # d
+    mtc1    $t9, $f0
+    sll     $t8, $t8, 5
+    lui     $t3, %hi(gTrigLutx16)
+    addiu   $t3, $t3, %lo(gTrigLutx16)
+    cvt.s.w $f0, $f0                 # d
+    addu    $t3, $t3, $t8            # node
+    lwc1    $f6, 4($t3)              # CM
+    lwc1    $f14, 20($t3)            # SM
+    mul.s   $f2, $f0, $f0            # d2
+    lwc1    $f8, 8($t3)              # SKM2
+    mul.s   $f6, $f0, $f6
+    lwc1    $f16, 24($t3)            # CKM2
+    mul.s   $f14, $f0, $f14
+    lwc1    $f4, 0($t3)              # S
+    mul.s   $f8, $f2, $f8
+    lwc1    $f12, 16($t3)            # C
+    mul.s   $f16, $f2, $f16
+    andi    $t2, $t0, 0x4000
+    sub.s   $f6, $f6, $f8
+    srl     $t5, $t0, 15
+    add.s   $f14, $f14, $f16
+    andi    $t5, $t5, 1              # bit 15
+    add.s   $f4, $f4, $f6            # sine line
+    andi    $t7, $t7, 1              # x < 0
+    sub.s   $f12, $f12, $f14         # cosine line
+    xor     $t6, $t5, $t7
+    xori    $t9, $t6, 1
+    mov.s   $f0, $f4
+    mov.s   $f2, $f12
+    move    $t8, $t6
+    beqz    $t2, 1f
+    move    $t4, $t5
+    mov.s   $f0, $f12
+    mov.s   $f2, $f4
+    move    $t8, $t5
+    move    $t4, $t9
+1:  beqz    $t8, 2f
+    nop
+    neg.s   $f0, $f0
+2:  beqz    $t4, 3f
+    nop
+    neg.s   $f2, $f2
+3:  jr      $ra
+    nop
+#endif
+
+    .size   trig_sincos, . - trig_sincos
+#endif
 
 #endif

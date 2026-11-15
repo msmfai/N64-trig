@@ -5,47 +5,729 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>N64 trig results</title>
 <style>
-:root { --bg: #ffffff; --fg: #1d1d1f; --muted: #5f6368; --line: #dddddd; }
+:root { --bg: #ffffff; --fg: #1d1d1f; --muted: #5f6368; --line: #dddddd; --code: #f5f5f7; }
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) { --bg: #161618; --fg: #e8e8ea; --muted: #a0a3a8; --line: #333336; }
+  :root:not([data-theme="light"]) { --bg: #161618; --fg: #e8e8ea; --muted: #a0a3a8; --line: #333336; --code: #1f1f22; }
 }
-:root[data-theme="dark"] { --bg: #161618; --fg: #e8e8ea; --muted: #a0a3a8; --line: #333336; }
+:root[data-theme="dark"] { --bg: #161618; --fg: #e8e8ea; --muted: #a0a3a8; --line: #333336; --code: #1f1f22; }
 body { margin: 0; background: var(--bg); color: var(--fg); font: 15px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; }
-main { max-width: 820px; margin: 0 auto; padding: 24px 16px 48px; }
-p { margin: 0 0 12px; }
+main { max-width: 860px; margin: 0 auto; padding: 24px 16px 48px; }
+h2 { font-size: 15px; font-weight: bold; margin: 28px 0 8px; }
+p, ul { margin: 0 0 12px; }
+ul { padding-left: 20px; }
 .scroll { overflow-x: auto; margin: 0 0 12px; }
 table { border-collapse: collapse; font-variant-numeric: tabular-nums; }
 th, td { text-align: right; padding: 3px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
 th:first-child, td:first-child { text-align: left; padding-left: 0; }
 th { color: var(--muted); font-weight: normal; }
+td.l, th.l { text-align: left; white-space: normal; }
+caption { text-align: left; color: var(--muted); padding: 0 0 4px; }
 .m { color: var(--muted); }
 a { color: inherit; }
+details { margin: 0 0 8px; }
+summary { cursor: pointer; }
+pre { background: var(--code); padding: 10px; overflow-x: auto; font-size: 13px; line-height: 1.4; }
+dt { font-weight: bold; margin-top: 10px; }
+dd { margin: 0 0 0 20px; }
 </style>
 </head>
 <body>
 <main>
-<p>S5C6 sin/cos for the VR4300 against SM64's vanilla sine table and Silas's folded polynomial. HackerSM64 (clang 21) on ares v148, 7 attract demos, 4304 frames, ~440 calls/frame, 3 code layouts. Not measured on a console. Source and data: <a href="https://github.com/msmfai/N64-trig">github.com/msmfai/N64-trig</a>.</p>
+<p>Sine and cosine for the N64's <a href="#g-vr4300">VR4300</a> CPU, measured inside Super Mario 64. <a href="#g-s5c6">S5C6</a> against the game's <a href="#g-table">vanilla table</a>, <a href="#g-silas">Silas Lock's folded polynomial</a> and <a href="#g-lutx16">LUTX16</a>, each as separate calls and as a <a href="#g-sincos">combined sincos</a>. Source, kernels and raw data: <a href="https://github.com/msmfai/N64-trig">github.com/msmfai/N64-trig</a>.</p>
+<ul>
+<li>Measured in <a href="#g-ares">ares</a> v148 on <a href="#g-hsm64">HackerSM64</a> built with clang 21: 7 attract demos, 4,304 frames, about 440 sin/cos per frame, 3 <a href="#g-layout">code layouts</a>.</li>
+<li>Not measured on a console.</li>
+</ul>
 
+<h2>Accuracy and size</h2>
 <div class="scroll"><table>
-<tr><th></th><th>vanilla table</th><th>S5C6 line</th><th>S5C6 code</th><th>Silas</th><th>LUTX16</th></tr>
-<tr><td>max error</td><td>1.4e-3</td><td>1.45e-5</td><td>1.45e-5</td><td>1.9e-4</td><td>6.4e-7</td></tr>
-<tr><td>data</td><td>20 KB</td><td>16 B</td><td>0</td><td>0</td><td>544 B</td></tr>
-<tr><td>instructions sin/cos</td><td>~4 inline</td><td>24/27</td><td>26/29</td><td>28/25 + sqrt.s</td><td>35/34</td></tr>
-<tr><td>µs/frame, pad 0</td><td>12,433</td><td>12,686</td><td>12,707</td><td>12,514</td><td>12,762</td></tr>
-<tr><td>µs/frame, pad 1024</td><td>12,471</td><td>12,146</td><td>12,152</td><td>12,214</td><td>12,195</td></tr>
-<tr><td>µs/frame, pad 4096</td><td>11,967</td><td>12,270</td><td>12,287</td><td>12,367</td><td>12,324</td></tr>
-<tr><td>vs vanilla, mean</td><td>0</td><td>+77 (+0.6%)</td><td>+92 (+0.7%)</td><td>+75 (+0.6%)</td><td>+137 (+1.1%)</td></tr>
-<tr><td>vs vanilla, range</td><td></td><td>−2.6% … +2.5%</td><td>−2.6% … +2.7%</td><td>−2.1% … +3.3%</td><td>−2.2% … +3.0%</td></tr>
-<tr><td>extra cycles/call vs table</td><td>0</td><td>~64</td><td>~63</td><td>~72</td><td>~67</td></tr>
+<tr><th></th><th><a href="#g-error">max error</a></th><th>data</th><th>code, sin / sincos</th><th>executed per call: sin</th><th>sincos</th></tr>
+<tr><td><a href="#g-table">vanilla table</a></td><td>1.4e-3</td><td>20 KB</td><td>~4 inline</td><td>~4</td><td>~8</td></tr>
+<tr><td><a href="#g-s5c6">S5C6</a> <a href="#g-line">line</a></td><td>1.45e-5</td><td>16 B</td><td>42 / 44</td><td>24–27</td><td>39–44</td></tr>
+<tr><td><a href="#g-s5c6">S5C6</a> <a href="#g-code">code</a></td><td>1.45e-5</td><td>0</td><td>48 / 50</td><td>26–29</td><td>45–50</td></tr>
+<tr><td><a href="#g-silas">Silas</a></td><td>1.9e-4</td><td>0</td><td>30 / 40</td><td>25–28 + sqrt</td><td>35–39 + sqrt</td></tr>
+<tr><td><a href="#g-lutx16">LUTX16</a></td><td>6.4e-7</td><td>544 B</td><td>49 / 54</td><td>34–35</td><td>48–54</td></tr>
+</table></div>
+<ul>
+<li>Code and executed counts are instructions. Silas returns sine 0 at angles 1–2.</li>
+</ul>
+
+<h2>Speed</h2>
+<div class="scroll"><table>
+<caption>Separate calls: game-thread µs/frame against the table</caption>
+<tr><th></th><th>layout 0</th><th>1024</th><th>4096</th><th>mean</th></tr>
+<tr><td><a href="#g-table">vanilla table</a> (µs/frame)</td><td>12,433</td><td>12,471</td><td>11,967</td><td>0</td></tr>
+<tr><td><a href="#g-s5c6">S5C6</a> <a href="#g-line">line</a></td><td>+253</td><td>−325</td><td>+303</td><td>+77</td></tr><tr><td><a href="#g-s5c6">S5C6</a> <a href="#g-code">code</a></td><td>+273</td><td>−319</td><td>+321</td><td>+92</td></tr><tr><td><a href="#g-silas">Silas</a></td><td>+81</td><td>−257</td><td>+400</td><td>+75</td></tr><tr><td><a href="#g-lutx16">LUTX16</a></td><td>+329</td><td>−276</td><td>+357</td><td>+137</td></tr>
+</table></div>
+<div class="scroll"><table>
+<caption>Combined sincos at the converted call sites: µs/frame against the table built from the same source</caption>
+<tr><th></th><th>layout 0</th><th>1024</th><th>4096</th><th>mean</th></tr>
+<tr><td><a href="#g-table">vanilla table</a> (µs/frame)</td><td>12,436</td><td>12,471</td><td>11,967</td><td>0</td></tr>
+<tr><td><a href="#g-s5c6">S5C6</a> <a href="#g-line">line</a></td><td>−322</td><td>−288</td><td>+396</td><td>−71</td></tr><tr><td><a href="#g-s5c6">S5C6</a> <a href="#g-code">code</a></td><td>−297</td><td>−285</td><td>+356</td><td>−75</td></tr><tr><td><a href="#g-silas">Silas</a></td><td>−276</td><td>−213</td><td>+461</td><td>−9</td></tr><tr><td><a href="#g-lutx16">LUTX16</a></td><td>−289</td><td>−214</td><td>+377</td><td>−42</td></tr>
+</table></div>
+<div class="scroll"><table>
+<caption>Where the difference comes from, µs/frame against the table, mean of the 3 layouts</caption>
+<tr><th></th><th>separate: work</th><th>misses</th><th>total</th><th>sincos: work</th><th>misses</th><th>total</th></tr>
+<tr><td><a href="#g-s5c6">S5C6</a> <a href="#g-line">line</a></td><td>+314</td><td>−237</td><td>+77</td><td>+247</td><td>−318</td><td>−71</td></tr><tr><td><a href="#g-s5c6">S5C6</a> <a href="#g-code">code</a></td><td>+308</td><td>−216</td><td>+92</td><td>+280</td><td>−355</td><td>−75</td></tr><tr><td><a href="#g-silas">Silas</a></td><td>+347</td><td>−272</td><td>+75</td><td>+260</td><td>−270</td><td>−9</td></tr><tr><td><a href="#g-lutx16">LUTX16</a></td><td>+329</td><td>−193</td><td>+137</td><td>+255</td><td>−297</td><td>−42</td></tr>
+</table></div>
+<div class="scroll"><table>
+<caption>S5C6 against Silas, both combined: µs/frame saved</caption>
+<tr><th></th><th>layout 0</th><th>1024</th><th>4096</th><th>mean</th></tr>
+<tr><td><a href="#g-s5c6">S5C6</a> <a href="#g-line">line</a></td><td>46</td><td>75</td><td>66</td><td>62</td></tr><tr><td><a href="#g-s5c6">S5C6</a> <a href="#g-code">code</a></td><td>21</td><td>72</td><td>105</td><td>66</td></tr>
+</table></div>
+<ul>
+<li>Work: CPU time without <a href="#g-miss">cache misses</a>, at ares's flat miss cost. Calls cost more work than the table at every layout; they make fewer cache misses at most layouts.</li>
+<li>Code layout moves every result by about ±3%, more than the gap between methods. Read the means, and the layout columns for the spread.</li>
+<li>Every call build plays the same game as its <a href="#g-pair">table build</a> (checked every frame).</li>
+</ul>
+
+<h2>Why sincos</h2>
+<div class="scroll"><table>
+<caption>sin/cos calls over the 7 demos</caption>
+<tr><th></th><th>calls</th><th>share</th></tr>
+<tr><td>all</td><td>1,960,936</td><td>100%</td></tr>
+<tr><td>second half of a sin/cos pair of one angle, back to back</td><td>948,844</td><td>48.4%</td></tr>
+<tr><td>in such a pair (both halves)</td><td>1,897,688</td><td>96.8%</td></tr>
+<tr><td>same angle as the previous call</td><td>4,501</td><td>0.2%</td></tr>
+</table></div>
+<div class="scroll"><table>
+<caption>Where the pairs come from (13 functions converted to sincoss, 98.4% of pairs)</caption>
+<tr><th></th><th>share of pairs</th></tr>
+<tr><td>mtxf_rotate_xyz_and_translate_and_mul</td><td>41.1%</td></tr>
+<tr><td>mtxf_rotate_zxy_and_translate</td><td>41.0%</td></tr>
+<tr><td>mtxf_rotate_zxy_and_translate_and_mul</td><td>3.9%</td></tr>
+<tr><td>mtxf_shadow</td><td>2.4%</td></tr>
+<tr><td>cur_obj_move_xz_using_fvel_and_yaw</td><td>1.8%</td></tr>
+<tr><td>cur_obj_compute_vel_xz</td><td>1.7%</td></tr>
+<tr><td>movtex_make_quad_vertex</td><td>1.4%</td></tr>
+<tr><td>rotate_in_xz</td><td>1.3%</td></tr>
+<tr><td>make_tex_transition_vertex, geo_process_shadow, mtxf_lookat, geo_process_perspective (tans), mtxf_rotate_xy, look_down_slopes, apply_slope_accel, mtxf_align_terrain_normal</td><td>3.7%</td></tr>
+</table></div>
+<ul>
+<li>The patch is <a href="https://github.com/msmfai/N64-trig/blob/main/bench/hsm64-sincos.patch">bench/hsm64-sincos.patch</a>: <code>f32 sx = sins(a); f32 cx = coss(a);</code> becomes <code>sincoss(a, sx, cx);</code>.</li>
+<li>Making <code>trig_sin</code> <code>__attribute__((const))</code> instead, so the compiler merges repeated calls: 784 → 733 call sites, no measurable change (−246 / +380 / −89 µs at the 3 layouts).</li>
+</ul>
+
+<h2>Checks</h2>
+<div class="scroll"><table>
+<tr><th class="l">question</th><th class="l">result</th></tr>
+<tr><td class="l">sincos equal to two calls?</td><td class="l">Bit-identical for all 65,536 angles, all four methods, checked inside each ROM.</td></tr>
+<tr><td class="l"><a href="#g-erratum">VR4300 multiply erratum</a>?</td><td class="l">No multiply follows a mul.s in any kernel, including across branches and the return.</td></tr>
+<tr><td class="l">ABI and FPU mode?</td><td class="l">Caller-saved registers only ($t0–$t9, even $f0–$f16); works under clang <code>-mfpxx -mips2</code> and <a href="#g-ido">IDO</a> o32.</td></tr>
+<tr><td class="l">Built with <a href="#g-ido">IDO</a>?</td><td class="l">Vanilla decomp SM64 (IDO 5.3, GNU as for the kernel): 559 call sites, in-ROM check of all 65,536 sines and cosines matches, 4,800 frames run.</td></tr>
+<tr><td class="l">Register pressure at call sites?</td><td class="l">About 2 extra stack loads/stores per call site. Included in the times above.</td></tr>
+<tr><td class="l">Denormals, NaN, infinity?</td><td class="l">None in any intermediate for any angle (smallest 7e-28).</td></tr>
+<tr><td class="l">Negative zero?</td><td class="l">sin(0x8000) and cos(0x4000) return −0.0 (table: +0.0). Nothing in SM64 divides by them.</td></tr>
+<tr><td class="l">atan2s(cos, sin) round trip?</td><td class="l">Same as the table on its 4,096 angles (max 5); better on all 65,536 (max 5 against 20).</td></tr>
+<tr><td class="l">Gameplay drift?</td><td class="l">Mario within 0.06 units of the vanilla run in every demo, same action every frame, same end state. Exact-input replays (TAS) would desync.</td></tr>
+<tr><td class="l">Real console?</td><td class="l">Not tested.</td></tr>
+</table></div>
+<div class="scroll"><table>
+<caption>Gameplay drift: Mario's largest distance from the vanilla run (SM64 units)</caption>
+<tr><th></th><th>bitdw</th><th>wf</th><th>ccm</th><th>bbh</th><th>jrb</th><th>hmc</th><th>pss</th></tr>
+<tr><td><a href="#g-s5c6">S5C6</a></td><td>0.004</td><td>0.009</td><td>0.060</td><td>0.014</td><td>0.009</td><td>0.019</td><td>0.014</td></tr>
+<tr><td><a href="#g-silas">Silas</a></td><td>0.015</td><td>0.034</td><td>0.059</td><td>0.031</td><td>0.012</td><td>0.026</td><td>0.029</td></tr>
 </table></div>
 
-<p>No kernel beats the vanilla table in ares. On average every one is 0.6–1.1% slower per frame. Code layout alone moves each result by ±3%, more than the gap, so any single build can show a kernel winning or losing. Each call costs ~60–70 cycles more than a table lookup. The calls win some of that back through fewer I-cache misses, because a call site is less code than an inline lookup, but not reliably.</p>
+<h2>Method</h2>
+<ul>
+<li><a href="#g-hsm64">HackerSM64</a> at commit 3be00d2f, clang 21, US ROM. Times are HackerSM64's own profiler total: game-thread <a href="#g-us">µs per frame</a>, audio excluded, in emulated time.</li>
+<li><a href="#g-pair">Table build and call build</a>: same values, same game; a hash of Mario's position over every frame checks it.</li>
+<li>Calls cut the angle to the table's 4,096 steps, so all builds of one method give the same values.</li>
+<li>3 <a href="#g-layout">layouts</a>: 0, 1024 and 4096 bytes of padding before the kernel.</li>
+<li>Cache misses from ares's own counters via <a href="#g-emux">emux</a>. ares charges 40 cycles per data miss or write-back, 48 per instruction miss, flat.</li>
+<li>Rebuild: <code>python3 bench/build.py --baserom sm64.us.z64 --variants kernels sincos</code>, then <code>python3 bench/run.py --variants kernels sincos</code>.</li>
+</ul>
 
-<p>S5C6 against Silas: S5C6 is ~10% cheaper per call at every layout, 13× more accurate, and has no dead zone (Silas returns sine 0 at angles 1–2). Per frame the two are indistinguishable. Constants loaded from a line or built in code: no measurable difference.</p>
+<h2>Kernels</h2>
+<details id="k-s5c6-line"><summary>S5C6 line: trig_sin and trig_sincos (<a href="https://github.com/msmfai/N64-trig/blob/main/kernel/s5c6.s">kernel/s5c6.s</a>)</summary>
+<pre># float trig_sin(int angle)  -- S5C6 sine/cosine kernel for the VR4300 (N64)
+#
+# angle: SM64/MM binary angle in $a0 (0x10000 = one turn; only bits 0-15 used)
+# result: sine in $f0.  For cosine call trig_sin(angle + 0x4000): the add is
+#         exact, so cosine is bit-identical to a dedicated cosine routine.
+#
+# Fold: t = angle + 0x2000; x = (t &amp; 0x3FFF) - 0x2000 is the offset from the
+# nearest quarter turn (|x| &lt;= 0x2000 = 45 degrees). Bit 14 of t selects the
+# cosine polynomial, bit 15 of t negates the result. (Folding idea: Silas Lock.)
+#
+#   sin = x * (S1 + x2*(S3 + S5*x2))
+#   cos = 1 + x2*(C2 + x2*(C4 + C6*x2))        x2 = x*x, x in binary-angle units
+#
+# Sine and cosine are fitted jointly: the average of sin^2 + cos^2 - 1 over all
+# angles is pinned to zero (so bone chains don&#x27;t grow or shrink), and the two
+# polynomials agree exactly at 45 degrees (sine is exactly odd).
+# S5 and C6 have only 8 significant bits (low 16 bits zero), so each is built
+# with one lui; the other four are loaded from one 16-byte cache line (trig_k,
+# in s5c6.c). Coefficients: BFS_* in fit/coeffs.h, made by fit/fit.py.
+#
+# GNU as syntax (o32). Assemble as a .s file; mips-linux-gnu-gcc -c works.
+#
+# Leaf function, no stack, caller-saved registers only. Hazards respected:
+# one instruction between mtc1 and use, no back-to-back mul.s, no mul.s in a
+# branch delay slot (VR4300 multiply erratum).
 
-<p>Use S5C6 for accuracy (100× better than the table at in-between angles), not speed. In ares it costs about the same frame time as the table; that is the whole speed claim. On a console, cache misses may cost more than ares's flat 40/48 cycles. The call builds miss less, so dearer misses would favour them. That is untested.</p>
+    .set noreorder
+    .set noat
+    .text
+    .global trig_sin
+    .type   trig_sin, @function
+    .balign 32
+trig_sin:
+    addiu   $t0, $a0, 0x2000
+    andi    $t1, $t0, 0x3fff
+    addiu   $t1, $t1, -0x2000        # x
+    mtc1    $t1, $f0
+    andi    $t2, $t0, 0x4000         # cosine octants?
+    lui     $t7, %hi(trig_k)
+    cvt.s.w $f0, $f0                 # x as float
+    addiu   $t7, $t7, %lo(trig_k)
+    mul.s   $f2, $f0, $f0            # x2
+    bnez    $t2, 1f
+    andi    $t5, $t0, 0x8000         # negate? (delay slot)
 
-<p class="m">Vanilla is the unmodified table and plays a slightly different game (different values). Each kernel was also paired with its own table build, which plays an identical game: same conclusion, within layout noise. Fold: Silas Lock. Written with AI assistance (Claude). No ROMs distributed.</p>
+# sine octants: x * (S1 + x2*(S3 + S5*x2))
+    lui     $t3, 0x1a97              # S5 = 0x1a970000 (8 significant bits)
+    mtc1    $t3, $f4
+    lwc1    $f6, 4($t7)              # S3
+    lwc1    $f8, 0($t7)              # S1
+    mul.s   $f4, $f4, $f2
+    add.s   $f4, $f4, $f6
+    mul.s   $f4, $f4, $f2
+    add.s   $f4, $f4, $f8
+    mul.s   $f0, $f4, $f0
+    bnez    $t5, 3f
+    nop
+    jr      $ra
+    nop
+
+# cosine octants: 1 + x2*(C2 + x2*(C4 + C6*x2))
+1:  lui     $t3, 0x925d              # C6 = 0x925d0000 (8 significant bits)
+    mtc1    $t3, $f4
+    lwc1    $f6, 12($t7)             # C4
+    lwc1    $f8, 8($t7)              # C2
+    lui     $t6, 0x3f80              # 1.0
+    mul.s   $f4, $f4, $f2
+    mtc1    $t6, $f10
+    add.s   $f4, $f4, $f6
+    mul.s   $f4, $f4, $f2
+    add.s   $f4, $f4, $f8
+    mul.s   $f4, $f4, $f2
+    add.s   $f0, $f4, $f10
+    bnez    $t5, 3f
+    nop
+    jr      $ra
+    nop
+
+3:  jr      $ra
+    neg.s   $f0, $f0                 # (delay slot)
+
+    .size   trig_sin, . - trig_sin
+
+# _Complex float trig_sincos(int angle)  -- sine and cosine of one angle
+#
+# result: sine in $f0, cosine in $f2 (GNU C returns _Complex float there:
+# __real__ is the sine, __imag__ the cosine). Each is bit-identical to
+# trig_sin(angle) and trig_sin(angle + 0x4000). One fold, both polynomials
+# interleaved. cos(a) = sin(a + 0x4000) has the same x with bit 14 flipped
+# (and bit 15 flipped when bit 14 was set), so:
+#   even octants: sin =  S, cos = C        odd octants: sin = C, cos = -S
+#   both negated when bit 15 of t is set.
+
+    .global trig_sincos
+    .type   trig_sincos, @function
+    .balign 32
+trig_sincos:
+# S5C6: S and C both; even octants sin = S, cos = C; odd sin = C, cos = -S;
+# both negate on bit 15 of t.
+    addiu   $t0, $a0, 0x2000
+    andi    $t1, $t0, 0x3fff
+    addiu   $t1, $t1, -0x2000
+    mtc1    $t1, $f0
+    lui     $t7, %hi(trig_k)
+    lui     $t3, 0x1a97              # S5
+    cvt.s.w $f0, $f0                 # x
+    addiu   $t7, $t7, %lo(trig_k)
+    mtc1    $t3, $f4
+    lui     $t3, 0x925d              # C6
+    mul.s   $f2, $f0, $f0            # x2
+    mtc1    $t3, $f12
+    lwc1    $f6, 4($t7)              # S3
+    lwc1    $f14, 12($t7)            # C4
+    lwc1    $f8, 0($t7)              # S1
+    lwc1    $f16, 8($t7)             # C2
+    mul.s   $f4, $f4, $f2
+    lui     $t6, 0x3f80              # 1.0
+    mul.s   $f12, $f12, $f2
+    mtc1    $t6, $f10
+    add.s   $f4, $f4, $f6
+    add.s   $f12, $f12, $f14
+    mul.s   $f4, $f4, $f2
+    andi    $t2, $t0, 0x4000
+    mul.s   $f12, $f12, $f2
+    andi    $t5, $t0, 0x8000
+    add.s   $f4, $f4, $f8
+    add.s   $f12, $f12, $f16
+    mul.s   $f4, $f4, $f0            # S
+    nop
+    mul.s   $f12, $f12, $f2
+    nop
+    add.s   $f12, $f12, $f10         # C
+    beqz    $t2, 1f
+    nop
+    mov.s   $f6, $f4
+    mov.s   $f4, $f12
+    neg.s   $f12, $f6
+1:  beqz    $t5, 2f
+    mov.s   $f0, $f4
+    neg.s   $f0, $f4
+    neg.s   $f12, $f12
+2:  jr      $ra
+    mov.s   $f2, $f12
+
+    .size   trig_sincos, . - trig_sincos
+
+
+/* kernel/s5c6.c */
+/* The four full-precision S5C6 coefficients, read by s5c6.s: one 16-byte,
+ * 16-byte-aligned cache line. S5 and C6 are built in the code (lui). */
+typedef struct {
+    float s1, s3, c2, c4;
+} TrigK;
+
+const TrigK trig_k __attribute__((aligned(16))) = {
+     9.586999658495188e-05f,   /* S1  0x38c90dd0 */
+    -1.4654559033280834e-13f,  /* S3  0xaa24fee4 */
+    -4.595529734530146e-09f,   /* C2  0xb19de6b5 */
+     3.4901736165623554e-18f,  /* C4  0x2280c3c2 */
+};</pre></details>
+<details id="k-s5c6-code"><summary>S5C6 code: trig_sin and trig_sincos (<a href="https://github.com/msmfai/N64-trig/blob/main/kernel/s5c6_code.s">kernel/s5c6_code.s</a>)</summary>
+<pre># float trig_sin(int angle)  -- S5C6 sine/cosine kernel for the VR4300 (N64)
+#
+# angle: SM64/MM binary angle in $a0 (0x10000 = one turn; only bits 0-15 used)
+# result: sine in $f0.  For cosine call trig_sin(angle + 0x4000): the add is
+#         exact, so cosine is bit-identical to a dedicated cosine routine.
+#
+# Fold: t = angle + 0x2000; x = (t &amp; 0x3FFF) - 0x2000 is the offset from the
+# nearest quarter turn (|x| &lt;= 0x2000 = 45 degrees). Bit 14 of t selects the
+# cosine polynomial, bit 15 of t negates the result. (Folding idea: Silas Lock.)
+#
+#   sin = x * (S1 + x2*(S3 + S5*x2))
+#   cos = 1 + x2*(C2 + x2*(C4 + C6*x2))        x2 = x*x, x in binary-angle units
+#
+# Sine and cosine are fitted jointly: the average of sin^2 + cos^2 - 1 over all
+# angles is pinned to zero (so bone chains don&#x27;t grow or shrink), and the two
+# polynomials agree exactly at 45 degrees (sine is exactly odd).
+# S5 and C6 have only 8 significant bits (low 16 bits zero), so each is built
+# with one lui; the other four are built with lui+ori, so the kernel reads no
+# data at all (s5c6.s loads those four from one cache line instead; same
+# results bit for bit). Coefficients: BFS_* in fit/coeffs.h, made by fit/fit.py.
+#
+# GNU as syntax (o32). Assemble as a .s file; mips-linux-gnu-gcc -c works.
+#
+# Leaf function, no stack, caller-saved registers only. Hazards respected:
+# one instruction between mtc1 and use, no back-to-back mul.s, no mul.s in a
+# branch delay slot (VR4300 multiply erratum).
+
+    .set noreorder
+    .set noat
+    .text
+    .global trig_sin
+    .type   trig_sin, @function
+    .balign 32
+trig_sin:
+    addiu   $t0, $a0, 0x2000
+    andi    $t1, $t0, 0x3fff
+    addiu   $t1, $t1, -0x2000        # x
+    mtc1    $t1, $f0
+    andi    $t2, $t0, 0x4000         # cosine octants?
+    cvt.s.w $f0, $f0                 # x as float
+    mul.s   $f2, $f0, $f0            # x2
+    bnez    $t2, 1f
+    andi    $t5, $t0, 0x8000         # negate? (delay slot)
+
+# sine octants: x * (S1 + x2*(S3 + S5*x2))
+    lui     $t3, 0x1a97              # S5 = 0x1a970000 (8 significant bits)
+    mtc1    $t3, $f4
+    lui     $t3, 0xaa24              # S3 = 0xaa24fee4
+    ori     $t3, $t3, 0xfee4
+    mtc1    $t3, $f6
+    lui     $t4, 0x38c9              # S1 = 0x38c90dd0
+    ori     $t4, $t4, 0x0dd0
+    mtc1    $t4, $f8
+    mul.s   $f4, $f4, $f2
+    add.s   $f4, $f4, $f6
+    mul.s   $f4, $f4, $f2
+    add.s   $f4, $f4, $f8
+    mul.s   $f0, $f4, $f0
+    bnez    $t5, 3f
+    nop
+    jr      $ra
+    nop
+
+# cosine octants: 1 + x2*(C2 + x2*(C4 + C6*x2))
+1:  lui     $t3, 0x925d              # C6 = 0x925d0000 (8 significant bits)
+    mtc1    $t3, $f4
+    lui     $t3, 0x2280              # C4 = 0x2280c3c2
+    ori     $t3, $t3, 0xc3c2
+    mtc1    $t3, $f6
+    lui     $t4, 0xb19d              # C2 = 0xb19de6b5
+    ori     $t4, $t4, 0xe6b5
+    mtc1    $t4, $f8
+    lui     $t6, 0x3f80              # 1.0
+    mul.s   $f4, $f4, $f2
+    mtc1    $t6, $f10
+    add.s   $f4, $f4, $f6
+    mul.s   $f4, $f4, $f2
+    add.s   $f4, $f4, $f8
+    mul.s   $f4, $f4, $f2
+    add.s   $f0, $f4, $f10
+    bnez    $t5, 3f
+    nop
+    jr      $ra
+    nop
+
+3:  jr      $ra
+    neg.s   $f0, $f0                 # (delay slot)
+
+    .size   trig_sin, . - trig_sin
+
+# _Complex float trig_sincos(int angle)  -- sine and cosine of one angle
+#
+# result: sine in $f0, cosine in $f2 (GNU C returns _Complex float there:
+# __real__ is the sine, __imag__ the cosine). Each is bit-identical to
+# trig_sin(angle) and trig_sin(angle + 0x4000). One fold, both polynomials
+# interleaved. cos(a) = sin(a + 0x4000) has the same x with bit 14 flipped
+# (and bit 15 flipped when bit 14 was set), so:
+#   even octants: sin =  S, cos = C        odd octants: sin = C, cos = -S
+#   both negated when bit 15 of t is set.
+
+    .global trig_sincos
+    .type   trig_sincos, @function
+    .balign 32
+trig_sincos:
+# S5C6: S and C both; even octants sin = S, cos = C; odd sin = C, cos = -S;
+# both negate on bit 15 of t.
+    addiu   $t0, $a0, 0x2000
+    andi    $t1, $t0, 0x3fff
+    addiu   $t1, $t1, -0x2000
+    mtc1    $t1, $f0
+    lui     $t3, 0x1a97              # S5
+    cvt.s.w $f0, $f0                 # x
+    mtc1    $t3, $f4
+    lui     $t3, 0x925d              # C6
+    mul.s   $f2, $f0, $f0            # x2
+    mtc1    $t3, $f12
+    lui     $t3, 0xaa24              # S3
+    ori     $t3, $t3, 0xfee4
+    mtc1    $t3, $f6
+    lui     $t4, 0x2280              # C4
+    ori     $t4, $t4, 0xc3c2
+    mtc1    $t4, $f14
+    lui     $t3, 0x38c9              # S1
+    ori     $t3, $t3, 0x0dd0
+    mtc1    $t3, $f8
+    lui     $t4, 0xb19d              # C2
+    ori     $t4, $t4, 0xe6b5
+    mtc1    $t4, $f16
+    mul.s   $f4, $f4, $f2
+    lui     $t6, 0x3f80              # 1.0
+    mul.s   $f12, $f12, $f2
+    mtc1    $t6, $f10
+    add.s   $f4, $f4, $f6
+    add.s   $f12, $f12, $f14
+    mul.s   $f4, $f4, $f2
+    andi    $t2, $t0, 0x4000
+    mul.s   $f12, $f12, $f2
+    andi    $t5, $t0, 0x8000
+    add.s   $f4, $f4, $f8
+    add.s   $f12, $f12, $f16
+    mul.s   $f4, $f4, $f0            # S
+    nop
+    mul.s   $f12, $f12, $f2
+    nop
+    add.s   $f12, $f12, $f10         # C
+    beqz    $t2, 1f
+    nop
+    mov.s   $f6, $f4
+    mov.s   $f4, $f12
+    neg.s   $f12, $f6
+1:  beqz    $t5, 2f
+    mov.s   $f0, $f4
+    neg.s   $f0, $f4
+    neg.s   $f12, $f12
+2:  jr      $ra
+    mov.s   $f2, $f12
+
+    .size   trig_sincos, . - trig_sincos</pre></details>
+<details id="k-silas"><summary>Silas: trig_sin and trig_sincos (<a href="https://github.com/msmfai/N64-trig/blob/main/bench/trig_kernels.s">bench/trig_kernels.s</a>)</summary>
+<pre>    .set noreorder
+    .set noat
+    .text
+
+    .global trig_sin
+    .type   trig_sin, @function
+    .balign 32
+trig_sin:
+
+# Silas: c = 1 + x2*(K1 + K2*x2) on the folded x; s = sqrt(1 - c*c).
+# K1 = 4*C1, K2 = 16*C2 of the original (it folds to 2x): exact rescalings.
+    addiu   $t0, $a0, 0x2000
+    andi    $t1, $t0, 0x3fff
+    addiu   $t1, $t1, -0x2000
+    mtc1    $t1, $f0
+    lui     $t3, 0x227c              # K2 = 0x227c6b4e
+    ori     $t3, $t3, 0x6b4e
+    cvt.s.w $f0, $f0                 # x
+    mtc1    $t3, $f4
+    lui     $t4, 0xb19d              # K1 = 0xb19dd974
+    ori     $t4, $t4, 0xd974
+    mtc1    $t4, $f6
+    lui     $t6, 0x3f80              # 1.0
+    mul.s   $f2, $f0, $f0            # x2
+    mtc1    $t6, $f8
+    andi    $t2, $t0, 0x4000
+    mul.s   $f4, $f4, $f2
+    andi    $t5, $a0, 0x8000         # Silas negates on bit 15 of the angle
+    add.s   $f4, $f4, $f6
+    mul.s   $f4, $f4, $f2
+    bnez    $t2, 1f                  # cosine octants: c is the result
+    add.s   $f0, $f4, $f8            # c (delay slot)
+    mul.s   $f2, $f0, $f0
+    sub.s   $f2, $f8, $f2
+    sqrt.s  $f0, $f2
+1:  bnez    $t5, 2f
+    nop
+    jr      $ra
+    nop
+2:  jr      $ra
+    neg.s   $f0, $f0
+
+    .size   trig_sin, . - trig_sin
+
+# _Complex float trig_sincos(int angle): sine in $f0, cosine in $f2, each
+# bit-identical to trig_sin(angle) and trig_sin(angle + 0x4000). One fold;
+# both halves computed. cos(a) = sin(a + 0x4000): the same x, bit 14 flipped,
+# bit 15 flipped when bit 14 was set.
+    .global trig_sincos
+    .type   trig_sincos, @function
+    .balign 32
+trig_sincos:
+
+# Silas: c from the polynomial, s = sqrt(1 - c*c). Even octants (bit 14 of t
+# clear): sin = s, cos = c; odd: sin = c, cos = s. Sine negates on bit 15 of
+# the angle, cosine on bit 15 of angle + 0x4000.
+    addiu   $t0, $a0, 0x2000
+    andi    $t1, $t0, 0x3fff
+    addiu   $t1, $t1, -0x2000
+    mtc1    $t1, $f0
+    lui     $t3, 0x227c              # K2
+    ori     $t3, $t3, 0x6b4e
+    cvt.s.w $f0, $f0                 # x
+    mtc1    $t3, $f4
+    lui     $t4, 0xb19d              # K1
+    ori     $t4, $t4, 0xd974
+    mtc1    $t4, $f6
+    lui     $t6, 0x3f80              # 1.0
+    mul.s   $f2, $f0, $f0            # x2
+    mtc1    $t6, $f8
+    andi    $t2, $t0, 0x4000
+    mul.s   $f4, $f4, $f2
+    addiu   $t9, $a0, 0x4000
+    add.s   $f4, $f4, $f6
+    andi    $t5, $a0, 0x8000         # sine negates
+    mul.s   $f4, $f4, $f2
+    andi    $t9, $t9, 0x8000         # cosine negates
+    add.s   $f10, $f4, $f8           # c
+    nop
+    mul.s   $f2, $f10, $f10
+    sub.s   $f2, $f8, $f2
+    sqrt.s  $f12, $f2                # s
+    mov.s   $f0, $f12
+    beqz    $t2, 1f
+    mov.s   $f2, $f10
+    mov.s   $f0, $f10
+    mov.s   $f2, $f12
+1:  beqz    $t5, 2f
+    nop
+    neg.s   $f0, $f0
+2:  beqz    $t9, 3f
+    nop
+    neg.s   $f2, $f2
+3:  jr      $ra
+    nop
+
+    .size   trig_sincos, . - trig_sincos</pre></details>
+<details id="k-lutx16"><summary>LUTX16: trig_sin and trig_sincos (<a href="https://github.com/msmfai/N64-trig/blob/main/bench/trig_kernels.s">bench/trig_kernels.s</a>)</summary>
+<pre>    .set noreorder
+    .set noat
+    .text
+
+    .global trig_sin
+    .type   trig_sin, @function
+    .balign 32
+trig_sin:
+
+# LUTX16: node i = (|x| + 256) &gt;&gt; 9, d = |x| - i*512, node = 32 bytes:
+#   sine line   S, C*M, S*K*M^2 -&gt; s = S + (d*CM - d2*SKM2)
+#   cosine line C, S*M, C*K*M^2 -&gt; c = C - (d*SM + d2*CKM2)
+# The sine value is odd in x: negate when x &lt; 0 differs from bit 15 of t.
+    addiu   $t0, $a0, 0x2000
+    andi    $t1, $t0, 0x3fff
+    addiu   $t1, $t1, -0x2000        # x
+    sra     $t7, $t1, 31             # 0 or -1
+    xor     $t1, $t1, $t7
+    subu    $t1, $t1, $t7            # |x|
+    addiu   $t8, $t1, 256
+    sra     $t8, $t8, 9              # i
+    sll     $t9, $t8, 9
+    subu    $t9, $t1, $t9            # d
+    mtc1    $t9, $f0
+    sll     $t8, $t8, 5
+    lui     $t3, %hi(gTrigLutx16)
+    addiu   $t3, $t3, %lo(gTrigLutx16)
+    cvt.s.w $f0, $f0                 # d
+    addu    $t3, $t3, $t8            # node
+    andi    $t2, $t0, 0x4000
+    srl     $t5, $t0, 15
+    andi    $t5, $t5, 1              # negate (cosine octants)
+    mul.s   $f2, $f0, $f0            # d2
+    bnez    $t2, 1f
+    andi    $t7, $t7, 1              # x &lt; 0 (delay slot)
+# sine octants
+    lwc1    $f6, 4($t3)
+    lwc1    $f8, 8($t3)
+    lwc1    $f4, 0($t3)
+    mul.s   $f6, $f0, $f6            # d*CM
+    nop
+    mul.s   $f8, $f2, $f8            # d2*SKM2
+    xor     $t5, $t5, $t7
+    sub.s   $f6, $f6, $f8
+    add.s   $f0, $f4, $f6
+    bnez    $t5, 3f
+    nop
+    jr      $ra
+    nop
+# cosine octants
+1:  lwc1    $f6, 20($t3)
+    lwc1    $f8, 24($t3)
+    lwc1    $f4, 16($t3)
+    mul.s   $f6, $f0, $f6            # d*SM
+    nop
+    mul.s   $f8, $f2, $f8            # d2*CKM2
+    add.s   $f6, $f6, $f8
+    sub.s   $f0, $f4, $f6
+    bnez    $t5, 3f
+    nop
+    jr      $ra
+    nop
+3:  jr      $ra
+    neg.s   $f0, $f0
+
+    .size   trig_sin, . - trig_sin
+
+# _Complex float trig_sincos(int angle): sine in $f0, cosine in $f2, each
+# bit-identical to trig_sin(angle) and trig_sin(angle + 0x4000). One fold;
+# both halves computed. cos(a) = sin(a + 0x4000): the same x, bit 14 flipped,
+# bit 15 flipped when bit 14 was set.
+    .global trig_sincos
+    .type   trig_sincos, @function
+    .balign 32
+trig_sincos:
+
+# LUTX16: both lines of the node. Even octants: sin = the sine line, negated
+# on bit 15 ^ (x &lt; 0); cos = the cosine line, negated on bit 15. Odd: sin =
+# the cosine line, negated on bit 15; cos = the sine line, negated on
+# !bit 15 ^ (x &lt; 0).
+    addiu   $t0, $a0, 0x2000
+    andi    $t1, $t0, 0x3fff
+    addiu   $t1, $t1, -0x2000        # x
+    sra     $t7, $t1, 31
+    xor     $t1, $t1, $t7
+    subu    $t1, $t1, $t7            # |x|
+    addiu   $t8, $t1, 256
+    sra     $t8, $t8, 9              # i
+    sll     $t9, $t8, 9
+    subu    $t9, $t1, $t9            # d
+    mtc1    $t9, $f0
+    sll     $t8, $t8, 5
+    lui     $t3, %hi(gTrigLutx16)
+    addiu   $t3, $t3, %lo(gTrigLutx16)
+    cvt.s.w $f0, $f0                 # d
+    addu    $t3, $t3, $t8            # node
+    lwc1    $f6, 4($t3)              # CM
+    lwc1    $f14, 20($t3)            # SM
+    mul.s   $f2, $f0, $f0            # d2
+    lwc1    $f8, 8($t3)              # SKM2
+    mul.s   $f6, $f0, $f6
+    lwc1    $f16, 24($t3)            # CKM2
+    mul.s   $f14, $f0, $f14
+    lwc1    $f4, 0($t3)              # S
+    mul.s   $f8, $f2, $f8
+    lwc1    $f12, 16($t3)            # C
+    mul.s   $f16, $f2, $f16
+    andi    $t2, $t0, 0x4000
+    sub.s   $f6, $f6, $f8
+    srl     $t5, $t0, 15
+    add.s   $f14, $f14, $f16
+    andi    $t5, $t5, 1              # bit 15
+    add.s   $f4, $f4, $f6            # sine line
+    andi    $t7, $t7, 1              # x &lt; 0
+    sub.s   $f12, $f12, $f14         # cosine line
+    xor     $t6, $t5, $t7
+    xori    $t9, $t6, 1
+    mov.s   $f0, $f4
+    mov.s   $f2, $f12
+    move    $t8, $t6
+    beqz    $t2, 1f
+    move    $t4, $t5
+    mov.s   $f0, $f12
+    mov.s   $f2, $f4
+    move    $t8, $t5
+    move    $t4, $t9
+1:  beqz    $t8, 2f
+    nop
+    neg.s   $f0, $f0
+2:  beqz    $t4, 3f
+    nop
+    neg.s   $f2, $f2
+3:  jr      $ra
+    nop
+
+    .size   trig_sincos, . - trig_sincos
+
+# gTrigLutx16: 17 nodes x 32 bytes, LUTX16_TABLE in fit/coeffs.h</pre></details>
+
+<ul>
+<li>All: <code>trig_sin(angle)</code> returns sin in $f0; cos is <code>trig_sin(angle + 0x4000)</code>. <code>trig_sincos(angle)</code> returns sin in $f0 and cos in $f2 (GNU C <code>_Complex float</code>).</li>
+<li>Coefficients: <a href="https://github.com/msmfai/N64-trig/blob/main/fit/coeffs.h">fit/coeffs.h</a>, made by <a href="https://github.com/msmfai/N64-trig/blob/main/fit/fit.py">fit/fit.py</a>.</li>
+</ul>
+
+<h2>Glossary</h2>
+<dl>
+<dt id="g-table">vanilla table</dt><dd>SM64's sine table: 5,120 floats (20 KB), sine and cosine sharing it. A lookup is <code>gSineTable[angle &gt;&gt; 4]</code>, about 4 inline instructions, 4,096 steps per turn.</dd>
+<dt id="g-angle">binary angle</dt><dd>SM64's angle unit: 0x10000 is one turn, 0x4000 a quarter.</dd>
+<dt id="g-fold">fold</dt><dd>For a <a href="#g-angle">binary angle</a>: t = angle + 0x2000; x = (t &amp; 0x3FFF) − 0x2000 is the offset from the nearest quarter turn (at most 45°). Bit 14 of t picks the sine or cosine polynomial, bit 15 negates. Idea from Silas Lock.</dd>
+<dt id="g-s5c6">S5C6</dt><dd>This repo's method: on the <a href="#g-fold">fold</a>, sine = x(a + bx² + cx⁴) (degree 5) and cosine = 1 + x²(d + ex² + fx⁴) (degree 6), fitted together so sin² + cos² stays 1 on average and both meet exactly at 45°. c and f have 8 significant bits, so each loads with one instruction.</dd>
+<dt id="g-line">line</dt><dd>S5C6 variant: the four full-precision coefficients are read from one 16-byte data cache line.</dd>
+<dt id="g-code">code</dt><dd>S5C6 variant: every coefficient is built in instructions; no data at all.</dd>
+<dt id="g-silas">Silas</dt><dd>Silas Lock's folded polynomial (<a href="https://github.com/AdamPrimer/folded-polynomial">github.com/AdamPrimer/folded-polynomial</a>): cosine = 1 + x²(K1 + K2x²) on the fold, sine = √(1 − cos²) with one sqrt.s.</dd>
+<dt id="g-lutx16">LUTX16</dt><dd>A 16-segment table with quadratic interpolation: 17 nodes of 32 bytes (544 B), each holding the sine and cosine value and slope terms.</dd>
+<dt id="g-sincos">sincos</dt><dd>One call returning sine and cosine of one angle. The fold and the constants are shared and the two polynomials interleave, so it costs less than two calls.</dd>
+<dt id="g-pair">table build / call build</dt><dd>A table build fills the vanilla table from the kernel at boot and keeps table lookups; the call build calls the kernel. Same values, so the same game; the difference is only the cost.</dd>
+<dt id="g-layout">layout</dt><dd>Where code sits in memory. Padding before the kernel moves it and everything after it, which changes which code shares cache lines. It moves results by about ±3%.</dd>
+<dt id="g-miss">cache miss</dt><dd>The VR4300 has a 16 KB instruction cache (32-byte lines) and an 8 KB data cache (16-byte lines). A miss loads a line from RAM. An inline table lookup is more code than a call, so calls can save instruction misses.</dd>
+<dt id="g-error">max error</dt><dd>Largest difference from the true sine over all 65,536 angles.</dd>
+<dt id="g-us">µs/frame</dt><dd>Game-thread CPU time per frame. SM64 runs at 30 fps: 33,333 µs per frame. The game thread uses about 12,300.</dd>
+<dt id="g-vr4300">VR4300</dt><dd>The N64's CPU, 93.75 MHz MIPS III with an FPU.</dd>
+<dt id="g-erratum">VR4300 multiply erratum</dt><dd>On early CPUs a mul.s or mul.d directly followed by another multiply can give a wrong result. Compilers work around it with <code>-mfix4300</code>; the kernels avoid the pattern.</dd>
+<dt id="g-ares">ares</dt><dd>A cycle-counting N64 emulator (<a href="https://ares-emu.net">ares-emu.net</a>). Deterministic: the same ROM gives the same cycle count every run.</dd>
+<dt id="g-emux">emux</dt><dd>ares's extension instructions, available in Homebrew Mode: the ROM reads cache counters, prints results and quits ares.</dd>
+<dt id="g-hsm64">HackerSM64</dt><dd>A Super Mario 64 decompilation fork for ROM hacks (<a href="https://github.com/HackerN64/HackerSM64">github.com/HackerN64/HackerSM64</a>), with a built-in profiler.</dd>
+<dt id="g-ido">IDO</dt><dd>SGI's compiler, used by the original game and the matching decompilation.</dd>
+</dl>
+
+<p class="m">Fold: Silas Lock. Written with AI assistance (Claude). MIT. No ROMs distributed.</p>
 </main>
 </body>
 </html>

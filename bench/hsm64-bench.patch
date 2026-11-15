@@ -1,8 +1,8 @@
 diff --git a/Makefile b/Makefile
-index e590b59b..b055a0a6 100644
+index e590b59b..36e98d29 100644
 --- a/Makefile
 +++ b/Makefile
-@@ -69,6 +69,23 @@ endif
+@@ -69,6 +69,27 @@ endif
  
  DEFINES += NO_ERRNO_H=1
  
@@ -10,17 +10,21 @@ index e590b59b..b055a0a6 100644
 +# src/engine/math_util.h. TRIG_FUNC: 0 none, 1 Silas, 2 BFSK (C); 4 Silas, 5 BFSK,
 +# 6 BFSK with 4 loaded constants, 7 LUTX16 (assembly). TRIG_USE: 0 table
 +# lookups, 1 calls. TRIG_QUANT=1 cuts a call's angle to the table's steps.
-+# TRIG_COUNT=1 counts sins/coss calls.
++# TRIG_COUNT=1 counts sins/coss calls. TRIG_SINCOS=1: in a call build,
++# sincoss() makes one trig_sincos call for both values. TRIG_SITES=1 reports
++# calls per call site (not for timing).
 +TRIG_BENCH ?= 0
 +TRIG_FUNC  ?= 0
 +TRIG_USE   ?= 0
 +TRIG_QUANT ?= 1
 +TRIG_COUNT ?= 0
++TRIG_SINCOS ?= 0
++TRIG_SITES ?= 0
 +# TRIG_PAD: bytes of padding placed in the code before trig_sin, a layout
 +# control that moves it and the code linked after it.
 +TRIG_PAD   ?= 0
 +ifeq ($(TRIG_BENCH),1)
-+  DEFINES += TRIG_BENCH=1 TRIG_HSM64=1 TRIG_FUNC=$(TRIG_FUNC) TRIG_USE=$(TRIG_USE) TRIG_QUANT=$(TRIG_QUANT) TRIG_COUNT=$(TRIG_COUNT) TRIG_PAD=$(TRIG_PAD)
++  DEFINES += TRIG_BENCH=1 TRIG_HSM64=1 TRIG_FUNC=$(TRIG_FUNC) TRIG_USE=$(TRIG_USE) TRIG_QUANT=$(TRIG_QUANT) TRIG_COUNT=$(TRIG_COUNT) TRIG_PAD=$(TRIG_PAD) TRIG_SINCOS=$(TRIG_SINCOS) TRIG_SITES=$(TRIG_SITES)
 +endif
 +
  # VERSION - selects the version of the game to build
@@ -44,10 +48,10 @@ index 42b0ef9b..68fa6650 100644
 +#undef DISABLE_DEMO
 +#endif
 diff --git a/src/engine/math_util.h b/src/engine/math_util.h
-index f53e65e4..8f524635 100644
+index f53e65e4..1d2368c5 100644
 --- a/src/engine/math_util.h
 +++ b/src/engine/math_util.h
-@@ -38,8 +38,55 @@ extern Vec3s gVec3sOne;
+@@ -38,10 +38,89 @@ extern Vec3s gVec3sOne;
  extern f32 gSineTable[];
  #define gCosineTable (gSineTable + 0x400)
  
@@ -60,6 +64,8 @@ index f53e65e4..8f524635 100644
 + *   TRIG_USE   0: sins/coss stay table lookups; 1: they call trig_sin
 + *   TRIG_QUANT 1: a call cuts its angle to the table's 4096 steps
 + *   TRIG_COUNT counts the calls (not for timing)
++ *   TRIG_SINCOS 1: sincoss() is one trig_sincos call (call builds only)
++ *   TRIG_SITES reports calls per call site (not for timing)
 + *
 + * With TRIG_FUNC != 0 and TRIG_USE 0 the table is refilled at boot from
 + * trig_sin (trig_bench_init). That build and the TRIG_USE 1, TRIG_QUANT 1
@@ -78,6 +84,12 @@ index f53e65e4..8f524635 100644
 +#ifndef TRIG_COUNT
 +#define TRIG_COUNT 0
 +#endif
++#ifndef TRIG_SINCOS
++#define TRIG_SINCOS 0
++#endif
++#ifndef TRIG_SITES
++#define TRIG_SITES 0
++#endif
 +
 +#if TRIG_FUNC != 0
 +f32 trig_sin(s32 angle);
@@ -93,6 +105,13 @@ index f53e65e4..8f524635 100644
 +#define TRIG_SIN_EXPR(x) trig_sin((u16) (x))
 +#define TRIG_COS_EXPR(x) trig_sin((u16) (x) + 0x4000)
 +#endif
++#if TRIG_SITES
++f32 trig_site(s32 angle);
++#undef TRIG_SIN_EXPR
++#undef TRIG_COS_EXPR
++#define TRIG_SIN_EXPR(x) trig_site((u16) (x) & 0xFFF0)
++#define TRIG_COS_EXPR(x) trig_site(((u16) (x) & 0xFFF0) + 0x4000)
++#endif
 +
 +#if TRIG_COUNT
 +extern u32 gTrigCalls;
@@ -102,9 +121,28 @@ index f53e65e4..8f524635 100644
 +#define sins(x) TRIG_SIN_EXPR(x)
 +#define coss(x) TRIG_COS_EXPR(x)
 +#endif
++/* sincoss(angle, s, c): s = sins(angle), c = coss(angle). With TRIG_SINCOS
++ * in a call build, one trig_sincos call returns both (in $f0/$f2);
++ * otherwise it is the two macros. Values are identical either way. */
++#if TRIG_SINCOS && TRIG_USE && TRIG_FUNC != 0
++_Complex float trig_sincos(s32 angle);
++#if TRIG_QUANT
++#define TRIG_SC_ARG(x) ((u16) (x) & 0xFFF0)
++#else
++#define TRIG_SC_ARG(x) ((u16) (x))
++#endif
++#define sincoss(x, s, c) do { _Complex float _sc = trig_sincos(TRIG_SC_ARG(x)); \
++    (s) = __real__ _sc; (c) = __imag__ _sc; } while (0)
++#define tans(x) ({ f32 _ts, _tc; sincoss((x), _ts, _tc); _ts / _tc; })
++#define cots(x) ({ f32 _ts, _tc; sincoss((x), _ts, _tc); _tc / _ts; })
++#else
++#define sincoss(x, s, c) do { u16 _sa = (u16) (x); (s) = sins(_sa); (c) = coss(_sa); } while (0)
  #define tans(x) (sins(x) / coss(x))
  #define cots(x) (coss(x) / sins(x))
++#endif
  #define atans(x) gArctanTable[(s32)((((x) * 1024) + 0.5f))] // is this correct? used for atan2_lookup
+ 
+ // Angle conversion macros
 diff --git a/src/game/game_init.c b/src/game/game_init.c
 index e64e96cc..6c665018 100644
 --- a/src/game/game_init.c
