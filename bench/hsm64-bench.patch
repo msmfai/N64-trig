@@ -1,0 +1,194 @@
+diff --git a/Makefile b/Makefile
+index e590b59b..b055a0a6 100644
+--- a/Makefile
++++ b/Makefile
+@@ -69,6 +69,23 @@ endif
+ 
+ DEFINES += NO_ERRNO_H=1
+ 
++# Trig benchmark (an external kit, not part of HackerSM64); see
++# src/engine/math_util.h. TRIG_FUNC: 0 none, 1 Silas, 2 BFSK (C); 4 Silas, 5 BFSK,
++# 6 BFSK with 4 loaded constants, 7 LUTX16 (assembly). TRIG_USE: 0 table
++# lookups, 1 calls. TRIG_QUANT=1 cuts a call's angle to the table's steps.
++# TRIG_COUNT=1 counts sins/coss calls.
++TRIG_BENCH ?= 0
++TRIG_FUNC  ?= 0
++TRIG_USE   ?= 0
++TRIG_QUANT ?= 1
++TRIG_COUNT ?= 0
++# TRIG_PAD: bytes of padding placed in the code before trig_sin, a layout
++# control that moves it and the code linked after it.
++TRIG_PAD   ?= 0
++ifeq ($(TRIG_BENCH),1)
++  DEFINES += TRIG_BENCH=1 TRIG_HSM64=1 TRIG_FUNC=$(TRIG_FUNC) TRIG_USE=$(TRIG_USE) TRIG_QUANT=$(TRIG_QUANT) TRIG_COUNT=$(TRIG_COUNT) TRIG_PAD=$(TRIG_PAD)
++endif
++
+ # VERSION - selects the version of the game to build
+ #   jp - builds the 1996 Japanese version
+ #   us - builds the 1996 North American version
+diff --git a/include/config/config_goddard.h b/include/config/config_goddard.h
+index 42b0ef9b..68fa6650 100644
+--- a/include/config/config_goddard.h
++++ b/include/config/config_goddard.h
+@@ -18,3 +18,12 @@
+  * Disables the demo that plays when idle on the start screen (has no effect if KEEP_MARIO_HEAD is disabled).
+  */
+ #define DISABLE_DEMO
++
++/**
++ * Trig benchmark (an external kit, not part of HackerSM64): its workload is
++ * the idle-screen demos, so it needs the Mario head and the demos.
++ */
++#ifdef TRIG_BENCH
++#define KEEP_MARIO_HEAD
++#undef DISABLE_DEMO
++#endif
+diff --git a/src/engine/math_util.h b/src/engine/math_util.h
+index f53e65e4..8f524635 100644
+--- a/src/engine/math_util.h
++++ b/src/engine/math_util.h
+@@ -38,8 +38,55 @@ extern Vec3s gVec3sOne;
+ extern f32 gSineTable[];
+ #define gCosineTable (gSineTable + 0x400)
+ 
+-#define sins(x) gSineTable[  (u16) (x) >> 4]
+-#define coss(x) gCosineTable[(u16) (x) >> 4]
++/*
++ * Trig benchmark (an external kit, not part of HackerSM64).
++ *   TRIG_FUNC  which sine src/game/trig_impl.c provides as trig_sin:
++ *              0 none, 1 Silas Lock's folded polynomial, 2 BFSK
++ *   TRIG_USE   0: sins/coss stay table lookups; 1: they call trig_sin
++ *   TRIG_QUANT 1: a call cuts its angle to the table's 4096 steps
++ *   TRIG_COUNT counts the calls (not for timing)
++ *
++ * With TRIG_FUNC != 0 and TRIG_USE 0 the table is refilled at boot from
++ * trig_sin (trig_bench_init). That build and the TRIG_USE 1, TRIG_QUANT 1
++ * build then compute bit-identical values, so they play the same game and
++ * differ only in what a sine costs.
++ */
++#ifndef TRIG_FUNC
++#define TRIG_FUNC 0
++#endif
++#ifndef TRIG_USE
++#define TRIG_USE 0
++#endif
++#ifndef TRIG_QUANT
++#define TRIG_QUANT 1
++#endif
++#ifndef TRIG_COUNT
++#define TRIG_COUNT 0
++#endif
++
++#if TRIG_FUNC != 0
++f32 trig_sin(s32 angle);
++#endif
++
++#if TRIG_USE == 0
++#define TRIG_SIN_EXPR(x) gSineTable[  (u16) (x) >> 4]
++#define TRIG_COS_EXPR(x) gCosineTable[(u16) (x) >> 4]
++#elif TRIG_QUANT
++#define TRIG_SIN_EXPR(x) trig_sin((u16) (x) & 0xFFF0)
++#define TRIG_COS_EXPR(x) trig_sin(((u16) (x) & 0xFFF0) + 0x4000)
++#else
++#define TRIG_SIN_EXPR(x) trig_sin((u16) (x))
++#define TRIG_COS_EXPR(x) trig_sin((u16) (x) + 0x4000)
++#endif
++
++#if TRIG_COUNT
++extern u32 gTrigCalls;
++#define sins(x) (gTrigCalls++, TRIG_SIN_EXPR(x))
++#define coss(x) (gTrigCalls++, TRIG_COS_EXPR(x))
++#else
++#define sins(x) TRIG_SIN_EXPR(x)
++#define coss(x) TRIG_COS_EXPR(x)
++#endif
+ #define tans(x) (sins(x) / coss(x))
+ #define cots(x) (coss(x) / sins(x))
+ #define atans(x) gArctanTable[(s32)((((x) * 1024) + 0.5f))] // is this correct? used for atan2_lookup
+diff --git a/src/game/game_init.c b/src/game/game_init.c
+index e64e96cc..6c665018 100644
+--- a/src/game/game_init.c
++++ b/src/game/game_init.c
+@@ -33,6 +33,9 @@
+ #include "profiling.h"
+ #include "debug.h"
+ #include "emutest.h"
++#ifdef TRIG_BENCH
++#include "trig_bench.h"
++#endif
+ 
+ // Gfx handlers
+ struct SPTask *gGfxSPTask;
+@@ -800,6 +803,10 @@ void setup_game_memory(void) {
+  */
+ void thread5_game_loop(UNUSED void *arg) {
+     setup_game_memory();
++#ifdef TRIG_BENCH
++    // The sine table is loaded: refill it if this build asks for that.
++    trig_bench_init();
++#endif
+     init_rumble_pak_scheduler_queue();
+     init_controllers();
+     create_thread_6();
+@@ -824,6 +831,10 @@ void thread5_game_loop(UNUSED void *arg) {
+     render_init();
+ 
+     while (TRUE) {
++#ifdef TRIG_BENCH
++        // The profiler still holds the frame that just ended: record it.
++        trig_bench_frame_profiler();
++#endif
+         profiler_frame_setup();
+         // If the reset timer is active, run the process to reset the game.
+         if (gResetTimer != 0) {
+diff --git a/src/menu/title_screen.c b/src/menu/title_screen.c
+index 590e7b8f..9f659cf1 100644
+--- a/src/menu/title_screen.c
++++ b/src/menu/title_screen.c
+@@ -15,6 +15,9 @@
+ #include "seq_ids.h"
+ #include "sm64.h"
+ #include "title_screen.h"
++#ifdef TRIG_BENCH
++#include "game/trig_bench.h"
++#endif
+ 
+ /**
+  * @file title_screen.c
+@@ -40,7 +43,12 @@ static s16 sPlayMarioGreeting = TRUE;
+ static s16 sPlayMarioGameOver = TRUE;
+ 
+ #ifndef DISABLE_DEMO
++#ifdef TRIG_BENCH
++// The benchmark plays the demos back to back instead of waiting 800 frames.
++#define PRESS_START_DEMO_TIMER 30
++#else
+ #define PRESS_START_DEMO_TIMER 800
++#endif
+ 
+ /**
+  * Run the demo timer on the PRESS START screen after a number of frames.
+@@ -51,6 +59,12 @@ s32 run_level_id_or_demo(s32 level) {
+     gCurrDemoInput = NULL;
+ 
+     if (level == LEVEL_NONE) {
++#ifdef TRIG_BENCH
++        // Once the last demo has ended the results stay on the title screen.
++        if (trig_bench_title()) {
++            return level;
++        }
++#endif
+         if (!gPlayer1Controller->buttonDown && !gPlayer1Controller->stickMag) {
+             // start the demo. 800 frames has passed while
+             // player is idle on PRESS START screen.
+@@ -72,6 +86,10 @@ s32 run_level_id_or_demo(s32 level) {
+                 level = (s8)((struct DemoInput *) gDemoInputsBuf.bufTarget)->timer;
+                 gCurrSaveFileNum = 1;
+                 gCurrActNum = 1;
++#ifdef TRIG_BENCH
++                // gDemoInputListID has wrapped to 0 if this is the last demo.
++                trig_bench_demo_start(level, gDemoInputListID == 0);
++#endif
+             }
+         } else { // activity was detected, so reset the demo countdown.
+             sDemoCountdown = 0;

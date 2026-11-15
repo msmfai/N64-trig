@@ -1,0 +1,69 @@
+#!/usr/bin/env python3
+"""Stand-in for `mips-linux-gnu-gcc` when building HackerSM64 with clang.
+
+HackerSM64's Makefile needs a MIPS gcc on PATH even with COMPILER=clang:
+its toolchain detection looks for one, and its rule for hand-written assembly
+runs `$(CROSS)gcc -c ... -x assembler-with-cpp file.s`. This script covers
+exactly those uses, with clang and GNU binutils (mips-linux-gnu-as):
+
+  -dumpfullversion / -dumpversion   prints a version
+  -c ... -x assembler-with-cpp      C-preprocess with clang, assemble with
+                                    mips-linux-gnu-as
+
+Anything else is refused, so an unexpected use of gcc is noticed, not silently
+compiled with something different. Install as `mips-linux-gnu-gcc` in a
+directory placed first on PATH (bench/build.py --clang does it).
+"""
+import os
+import subprocess
+import sys
+import tempfile
+
+
+def main():
+    args = sys.argv[1:]
+    if args in (['-dumpfullversion'], ['-dumpversion']):
+        print('14.2.0')
+        return 0
+    if '-c' not in args or 'assembler-with-cpp' not in args:
+        sys.stderr.write('mips-gcc-shim: unsupported use: ' + ' '.join(args) + '\n')
+        return 1
+    cpp, asm, out, src, dep = [], [], None, None, None
+    it = iter(args)
+    for a in it:
+        if a == '-o':
+            out = next(it)
+        elif a == '-MF':
+            dep = next(it)
+        elif a == '-x':
+            next(it)
+        elif a.startswith('-Wa,-I'):
+            asm.append(a[4:])
+        elif a.startswith(('-D', '-I', '-U')) or a == '-nostdinc':
+            cpp.append(a)
+        elif not a.startswith('-'):
+            src = a
+        # every other gcc code-generation or warning flag is irrelevant to assembly
+    if out is None or src is None:
+        sys.stderr.write('mips-gcc-shim: no input or output: ' + ' '.join(args) + '\n')
+        return 1
+    with tempfile.TemporaryDirectory() as tmp:
+        pre = os.path.join(tmp, 'pre.s')
+        # A MIPS gcc predefines the *_LANGUAGE_ASSEMBLY macros when it preprocesses
+        # assembly (libultra's headers rely on them to hide their C typedefs); clang does not.
+        cmd = ['clang', '-E', '-P', '-x', 'assembler-with-cpp', '-target', 'mips', '-mabi=32',
+               '-Wno-trigraphs', '-D_LANGUAGE_ASSEMBLY', '-D__LANGUAGE_ASSEMBLY',
+               '-DLANGUAGE_ASSEMBLY'] + cpp
+        if dep:
+            cmd += ['-MMD', '-MT', out, '-MF', dep]
+        cmd += ['-o', pre, src]
+        r = subprocess.run(cmd)
+        if r.returncode:
+            return r.returncode
+        r = subprocess.run(['mips-linux-gnu-as', '-EB', '-march=vr4300', '-mabi=32', '-mips3', '-G', '0',
+                            '-mhard-float', '-mno-shared'] + asm + ['-o', out, pre])
+        return r.returncode
+
+
+if __name__ == '__main__':
+    sys.exit(main())
