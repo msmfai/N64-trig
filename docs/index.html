@@ -30,8 +30,8 @@ a { color: inherit; }
 <tr><th></th><th>S5C6</th><th>Silas</th><th>SM64 table</th></tr>
 <tr><td>max error</td><td>1.45e-5</td><td>1.9e-4</td><td>1.4e-3</td></tr>
 <tr><td>max |s²+c²−1|</td><td>1.7e-7</td><td>7.1e-8</td><td></td></tr>
-<tr><td>instructions sin/cos</td><td>24/27</td><td>28/25 + sqrt.s</td><td>1 load</td></tr>
-<tr><td>data</td><td>16 B</td><td>0</td><td>20 KB</td></tr>
+<tr><td>instructions sin/cos</td><td>24/27 (line), 26/29 (code)</td><td>28/25 + sqrt.s</td><td>1 load</td></tr>
+<tr><td>data</td><td>16 B (line), 0 (code)</td><td>0</td><td>20 KB</td></tr>
 </table></div>
 
 <p>Method: 7 attract demos, 4304 frames, ~440 calls/frame. Table build (table refilled from the kernel) vs call build: bit-identical values, same gameplay (position hash). HackerSM64 profiler game-thread time. 3 code layouts.</p>
@@ -39,11 +39,12 @@ a { color: inherit; }
 <div class="scroll"><table>
 <tr><th>calls − table</th><th>pad 0</th><th>pad 1024</th><th>pad 4096</th><th>cycles/call</th></tr>
 <tr><td>Silas</td><td>+61 µs</td><td>−186</td><td>+234</td><td>~72</td></tr>
-<tr><td>S5C6</td><td>+107 µs</td><td>−378</td><td>+221</td><td>~64</td></tr>
+<tr><td>S5C6 line</td><td>+107 µs</td><td>−378</td><td>+221</td><td>~64</td></tr>
+<tr><td>S5C6 code</td><td>+110 µs</td><td>−396</td><td>+199</td><td>~63</td></tr>
 <tr><td>LUTX16</td><td>+124 µs</td><td>−417</td><td>+211</td><td>~67</td></tr>
 </table></div>
 
-<p>Kernel vs table is within layout noise (I-cache; call builds take 40–1190 fewer I misses/frame). S5C6 costs ~10% fewer cycles per call than Silas at every layout.</p>
+<p>Kernel vs table is within layout noise (I-cache; call builds take 40–1190 fewer I misses/frame). S5C6 costs ~10% fewer cycles per call than Silas at every layout. Line vs code constants: no measurable difference; code has no D-cache dependence.</p>
 
 <p class="m">ares: flat 40/48-cycle miss cost, no pipeline model. Fold: Silas Lock. Written with AI assistance (Claude). No ROMs distributed.</p>
 </main>

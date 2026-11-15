@@ -11,7 +11,12 @@ console yet. Read "What ares can't tell you" before quoting a number.
 
 ## The kernel
 
-`kernel/s5c6.s` (+ `s5c6.c`, `s5c6.h`): `float trig_sin(int angle)` for
+Two versions, bit-identical results, same `kernel/s5c6.h`:
+
+- `kernel/s5c6.s` + `s5c6.c`: four constants loaded from one 16-byte line.
+- `kernel/s5c6_code.s`: every constant built in code; reads no data.
+
+Both are `float trig_sin(int angle)` for
 16-bit binary angles (0x10000 = one turn). Cosine is `trig_sin(angle + 0x4000)`;
 the add is exact, so cosine costs one call and is bit-identical to a
 dedicated cosine routine.
@@ -24,8 +29,12 @@ dedicated cosine routine.
   (rotations don't grow or shrink vectors on average), and so the two meet
   exactly at 45°.
 - **Constants.** The two highest-order coefficients have only 8 significant
-  bits, so each is built in the code with one `lui`; the other four sit in one
-  16-byte, 16-byte-aligned cache line. A call touches at most one data line.
+  bits, so each is built in the code with one `lui`. The other four take
+  `lui`+`ori`+`mtc1` each in `s5c6_code.s`, or one `lwc1` each from one
+  16-byte, 16-byte-aligned line in `s5c6.s` (2 instructions fewer per call,
+  but a possible D-cache miss). Measured, the two are indistinguishable
+  (below); on a console, where misses may cost more, `s5c6_code.s` is the
+  safer choice.
 - **Hazards.** Leaf function, no stack. One instruction between `mtc1` and use,
   no back-to-back `mul.s` and no `mul.s` in a delay slot (VR4300 erratum).
 
@@ -33,8 +42,8 @@ dedicated cosine routine.
 |---|---|---|---|
 | Max error, all 65536 angles | 1.45e-5 | 1.9e-4 | 1.4e-3 (4096 steps) |
 | Max \|sin² + cos² − 1\| | 1.7e-7 | 7.1e-8 | |
-| Instructions, sine / cosine octants | 24 / 27 | 28 / 25 (sine has a `sqrt.s`) | 1 load |
-| Data | 16 B (one line) | 0 (all in code) | 20 KB (1280 lines) |
+| Instructions, sine / cosine octants | 24 / 27 (line), 26 / 29 (code) | 28 / 25 (sine has a `sqrt.s`) | 1 load |
+| Data | 16 B (line), 0 (code) | 0 (all in code) | 20 KB (1280 lines) |
 | Small angles | exact sign and slope | sine is 0 at angles 1 and 2 | |
 
 `fit/fit.py` (numpy, about 35 s) regenerates every coefficient in
@@ -80,8 +89,8 @@ fast-forwards, prints its results to ares's terminal and quits; a run of eight
 ROMs takes about five minutes. Times are emulated time, so a busy host does not
 change them. You supply the US base ROM; never distribute it or the built ROMs.
 
-Variants: `asilas`, `abfsk` (S5C6 with every constant built in code),
-`abfskl` (S5C6 as in `kernel/`, four constants loaded), `alutx` (LUTX16:
+Variants: `asilas`, `abfsk` (S5C6 as in `kernel/s5c6_code.s`),
+`abfskl` (S5C6 as in `kernel/s5c6.s`), `alutx` (LUTX16:
 16-segment table with a quadratic correction, 544 bytes), each with its table
 build; `c` builds the C versions instead.
 
@@ -97,7 +106,7 @@ build takes about 12,000-12,600 µs):
 |---|---|---|---|---|
 | Silas | +61 | −186 | +234 | +36 |
 | S5C6, constants in code | +110 | −396 | +199 | −29 |
-| S5C6, `kernel/` (4 loaded) | +107 | −378 | +221 | −17 |
+| S5C6, constants loaded (`s5c6.s`) | +107 | −378 | +221 | −17 |
 | LUTX16 | +124 | −417 | +211 | −27 |
 
 **Extra instruction work of the calls, cycles per frame** (measured time,
@@ -107,7 +116,7 @@ game + audio threads, minus every cache miss at ares's price):
 |---|---|---|---|
 | Silas | 31,600 | 32,700 | 30,600 |
 | S5C6, constants in code | 28,300 | 28,000 | 27,200 |
-| S5C6, `kernel/` | 27,800 | 28,500 | 28,400 |
+| S5C6, constants loaded (`s5c6.s`) | 27,800 | 28,500 | 28,400 |
 | LUTX16 | 29,300 | 27,700 | 31,400 |
 
 What this says:
