@@ -4,6 +4,8 @@ A fast, accurate sine/cosine kernel for the N64's VR4300 (S5C6), and an
 in-game benchmark that measures it, Silas Lock's folded polynomial and a
 16-segment table against Super Mario 64's sine table, in HackerSM64 on ares.
 
+Results summary: https://msmfai.github.io/N64-trig/
+
 **Status: emulator results only.** Nothing here has been measured on a
 console yet. Read "What ares can't tell you" before quoting a number.
 
