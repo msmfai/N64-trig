@@ -240,13 +240,22 @@ static void trig_bench_record(u32 ticks, u32 preemptedTicks, u32 audioTicks) {
  * started; XPROFREAD reads counter $t1 of slot $t0 into $t1. Slot -1 would
  * read the global counters directly, but v148 compares it unsigned against
  * the slot count and returns 0, so slot 0 is kept started and is stopped,
- * read and restarted once a frame. On a console these do nothing (undefined
- * COP0 functions), but the benchmark is only meant for ares. */
+ * read and restarted once a frame. They have not been run on a console, so
+ * a hardware build (TRIG_EMUX=0) never executes any of them: detection then
+ * reports no ares and every other emux call is skipped. Results are on the
+ * title screen either way. */
+#ifndef TRIG_EMUX
+#define TRIG_EMUX 1
+#endif
 static u32 tb_emux_detect(void) {
+#if TRIG_EMUX
     register u32 r asm("$8") = 0;
 
     asm volatile(".word 0x42800060" : "+r"(r)); /* XDETECT $t0, code 1 */
     return r;
+#else
+    return 0;
+#endif
 }
 
 static void tb_emux_prof(s32 stop) {
