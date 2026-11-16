@@ -33,7 +33,7 @@ dd { margin: 0 0 0 20px; }
 </head>
 <body>
 <main>
-<p><b>AI use:</b> the code, kernels, benchmark and this report were written with Claude (Anthropic's AI). No art, models or music.</p>
+<p><b>AI use:</b> I'm a mathematician: I designed the approximation (the polynomial forms, the fit, truncating c and f to 8 bits, the constants in one cache line) and directed the work. Claude (Anthropic's AI) wrote the code, assembly, benchmark and report. No art, models or music.</p>
 <p>A folded polynomial joint sine / cosine kernel for the N64 (<a href="#g-vr4300">VR4300</a>), more than 10x more accurate than <a href="#g-silas">Silas Lock's</a>. Source and raw data: <a href="https://github.com/msmfai/N64-trig">github.com/msmfai/N64-trig</a>.</p>
 <p>It uses a polynomial approximation of</p>
 <pre>S(x) = x(a + x²(b + cx²))
