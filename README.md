@@ -1,3 +1,5 @@
+**AI use:** the code, kernels, benchmark and report were written with Claude (Anthropic's AI). No art, models or music.
+
 A folded polynomial joint sine / cosine kernel for the N64 (VR4300), more than 10x more accurate than Silas Lock's.
 
 It uses a polynomial approximation of
@@ -33,4 +35,4 @@ python3 bench/build.py --baserom sm64.us.z64 [--clang BIN --binutils BIN] [--pad
 python3 bench/run.py [--variants kernels sincos] [--suffix=-padN]
 ```
 
-`fit/fit.py` regenerates `fit/coeffs.h`. Fold: Silas Lock. Written with AI assistance (Claude). MIT. No ROMs included.
+`fit/fit.py` regenerates `fit/coeffs.h`. Fold: Silas Lock. MIT. No ROMs included.
