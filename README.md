@@ -1,4 +1,4 @@
-**AI use:** the code, kernels, benchmark and report were written with Claude (Anthropic's AI). No art, models or music.
+**AI use:** I'm a mathematician: I designed the approximation (the polynomial forms, the fit, truncating c and f to 8 bits, the constants in one cache line) and directed the work. Claude (Anthropic's AI) wrote the code, assembly, benchmark and report. No art, models or music.
 
 A folded polynomial joint sine / cosine kernel for the N64 (VR4300), more than 10x more accurate than Silas Lock's.
 
