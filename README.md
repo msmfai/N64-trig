@@ -15,7 +15,8 @@ and makes it inexpensive with the use of brackets you can see; by truncating c a
 | | This kernel | Silas |
 |---|---|---|
 | Max error | 1.45e-5 | 1.9e-4 |
-| Max \|s² + c² − 1\| | 1.7e-7 | |
+| Max \|s² + c² − 1\| | 1.7e-7 | 7.1e-8 |
+| Mean \|s² + c² − 1\| | 8.9e-10 | 1.7e-8 |
 | Instructions executed per sincos | 39–44 | 35–39 + sqrt |
 | µs/frame saved vs Silas in HackerSM64 (ares), 3 code layouts | 46 / 75 / 66, mean 62 | 0 |
 
