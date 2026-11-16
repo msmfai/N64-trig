@@ -1,8 +1,8 @@
 diff --git a/Makefile b/Makefile
-index e590b59b..36e98d29 100644
+index e590b59b..7a5fedfa 100644
 --- a/Makefile
 +++ b/Makefile
-@@ -69,6 +69,27 @@ endif
+@@ -69,6 +69,29 @@ endif
  
  DEFINES += NO_ERRNO_H=1
  
@@ -12,7 +12,8 @@ index e590b59b..36e98d29 100644
 +# lookups, 1 calls. TRIG_QUANT=1 cuts a call's angle to the table's steps.
 +# TRIG_COUNT=1 counts sins/coss calls. TRIG_SINCOS=1: in a call build,
 +# sincoss() makes one trig_sincos call for both values. TRIG_SITES=1 reports
-+# calls per call site (not for timing).
++# calls per call site (not for timing). TRIG_EMUX=0: a build for real
++# hardware, never runs the ares-only emux instructions (results on screen only).
 +TRIG_BENCH ?= 0
 +TRIG_FUNC  ?= 0
 +TRIG_USE   ?= 0
@@ -20,11 +21,12 @@ index e590b59b..36e98d29 100644
 +TRIG_COUNT ?= 0
 +TRIG_SINCOS ?= 0
 +TRIG_SITES ?= 0
++TRIG_EMUX  ?= 1
 +# TRIG_PAD: bytes of padding placed in the code before trig_sin, a layout
 +# control that moves it and the code linked after it.
 +TRIG_PAD   ?= 0
 +ifeq ($(TRIG_BENCH),1)
-+  DEFINES += TRIG_BENCH=1 TRIG_HSM64=1 TRIG_FUNC=$(TRIG_FUNC) TRIG_USE=$(TRIG_USE) TRIG_QUANT=$(TRIG_QUANT) TRIG_COUNT=$(TRIG_COUNT) TRIG_PAD=$(TRIG_PAD) TRIG_SINCOS=$(TRIG_SINCOS) TRIG_SITES=$(TRIG_SITES)
++  DEFINES += TRIG_BENCH=1 TRIG_HSM64=1 TRIG_FUNC=$(TRIG_FUNC) TRIG_USE=$(TRIG_USE) TRIG_QUANT=$(TRIG_QUANT) TRIG_COUNT=$(TRIG_COUNT) TRIG_PAD=$(TRIG_PAD) TRIG_SINCOS=$(TRIG_SINCOS) TRIG_SITES=$(TRIG_SITES) TRIG_EMUX=$(TRIG_EMUX)
 +endif
 +
  # VERSION - selects the version of the game to build

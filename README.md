@@ -13,7 +13,7 @@ S5C6 sine/cosine for the N64 VR4300, benchmarked in HackerSM64 (clang 21) on are
 Means of 3 code layouts; layout alone moves results ±3%. Seven attract demos, ~440 calls/frame, game thread ~12,300 µs/frame. Every call build plays the same game as its table build. `bench/hsm64-sincos.patch` converts 13 functions (98% of sin/cos pairs) to `sincoss()`.
 
 ```sh
-python3 bench/build.py --baserom sm64.us.z64 [--clang BIN --binutils BIN] [--pad N] [--variants kernels sincos]
+python3 bench/build.py --baserom sm64.us.z64 [--clang BIN --binutils BIN] [--pad N] [--variants kernels sincos] [--hardware]
 python3 bench/run.py [--variants kernels sincos] [--suffix=-padN]
 ```
 

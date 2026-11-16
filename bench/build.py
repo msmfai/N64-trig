@@ -107,10 +107,12 @@ def build(tree, variant, args, env):
     sincos = variant.endswith('-sc')
     if sincos:
         tree = sincos_tree(tree)
-    out = f'build-{variant}' + ('-count' if args.count else '') + (f'-pad{args.pad}' if args.pad else '')
+    out = (f'build-{variant}' + ('-count' if args.count else '') + ('-hw' if args.hardware else '')
+           + (f'-pad{args.pad}' if args.pad else ''))
     cmd = [args.make, '-C', tree, 'VERSION=us', f'BUILD_DIR_BASE={out}', 'TRIG_BENCH=1',
            f'TRIG_FUNC={func}', f'TRIG_USE={use}', 'TRIG_QUANT=1', f'TRIG_COUNT={int(args.count)}',
-           f'TRIG_PAD={args.pad}', f'TRIG_SINCOS={int(sincos)}', f'-j{args.jobs}']
+           f'TRIG_PAD={args.pad}', f'TRIG_SINCOS={int(sincos)}',
+           f'TRIG_EMUX={int(not args.hardware)}', f'-j{args.jobs}']
     if args.clang:
         cmd.insert(3, 'COMPILER=clang')
     log = tree / f'{out}.log'
@@ -129,6 +131,8 @@ def main():
     ap.add_argument('--clang', type=Path, help='bin directory of a clang with MIPS targets: build with clang')
     ap.add_argument('--binutils', type=Path, help='directory with mips-linux-gnu-as/ld/objcopy, put on PATH')
     ap.add_argument('--count', action='store_true', help='count sins/coss calls (timings are then not clean)')
+    ap.add_argument('--hardware', action='store_true',
+                    help='build for a real N64: no ares-only instructions, results on the title screen only')
     ap.add_argument('--pad', type=int, default=0, help='layout control: bytes of padding before trig_sin')
     ap.add_argument('--make', default='gmake' if platform.system() == 'Darwin' else 'make')
     ap.add_argument('--jobs', type=int, default=max(1, (os.cpu_count() or 4) - 2))
