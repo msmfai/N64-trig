@@ -22,8 +22,29 @@ and makes it inexpensive with the use of brackets you can see; by truncating c a
 | Instructions executed per sincos | 39–44 | 35–39 + sqrt |
 | µs/frame saved vs Silas in HackerSM64 (ares), 3 code layouts | 46 / 75 / 66, mean 62 | 0 |
 
-- **Kernel:** [`kernel/sincos.s`](kernel/sincos.s) (constants in one 16-byte cache line), or [`kernel/sincos_code.s`](kernel/sincos_code.s) (all constants built in code, no data). C macro: [`kernel/sincos.h`](kernel/sincos.h).
-- **Sine or cosine alone:** `kernel/s5c6.s` / `s5c6_code.s` add `trig_sin` (cos is `trig_sin(angle + 0x4000)`) beside `trig_sincos`.
+## Two versions: one cache line, or pure code
+
+The kernel comes in two versions. They use the same polynomial and give bit-identical results. The only difference is where four of the six constants come from.
+
+| | [`kernel/sincos.s`](kernel/sincos.s): one cache line | [`kernel/sincos_code.s`](kernel/sincos_code.s): pure code |
+|---|---|---|
+| c, f and 1.0 | built with one `lui` each | built with one `lui` each |
+| a, b, d, e | read from `trig_k`, one 16-byte data-cache line | built with `lui` + `ori` |
+| Data | 16 bytes, 16-byte aligned | none |
+| Instructions executed per sincos | 39–44 | 45–50 |
+| µs/frame saved vs Silas, mean of 3 layouts | 62 | 66 |
+
+**Why there are two:**
+- The cache-line version runs 6 fewer instructions, but only if its line is already in the data cache. If the game has evicted the line, the call waits for RAM.
+- The pure-code version can never miss on data. It costs 24 more bytes of instruction cache instead.
+- On ares the two are tied: the gap is smaller than the ±3% that code layout alone moves results. ares charges a flat cost per cache miss and doesn't model RAM contention, so it can't say which one wins on a console. That is why both are kept until someone measures on hardware.
+- The pure-code version is one self-contained file, with no `.rodata` to place or align. Use it if that is easier for your build.
+
+C macro for either: [`kernel/sincos.h`](kernel/sincos.h).
+
+## Details
+
+- **Sine or cosine alone:** `kernel/s5c6.s` (cache line) / `s5c6_code.s` (pure code) add `trig_sin` (cos is `trig_sin(angle + 0x4000)`) beside `trig_sincos`.
 - **Not tested on a real N64.** ares charges flat cache-miss costs. Help with a console run is appreciated: `--hardware` builds never run the ares-only instructions and show results on the title screen.
 
 Full report (accuracy, speed, checks, method, glossary): https://msmfai.github.io/N64-trig/

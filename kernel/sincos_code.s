@@ -3,6 +3,8 @@
 # $f0-$f16 only (all caller-saved). Max error 1.45e-5.
 # S(x) = x(a + x^2(b + cx^2)), C(x) = 1 + x^2(d + x^2(e + fx^2)), x in +-1/8 turn.
 # All six constants are built in code: no data, 6 more instructions than sincos.s.
+# Cache-line version (4 constants from one 16-byte line, 6 fewer instructions):
+# kernel/sincos.s. Why both exist: README.md, "Two versions".
 
     .set noreorder
     .set noat
