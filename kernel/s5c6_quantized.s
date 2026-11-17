@@ -1,11 +1,11 @@
-# float trig_sin(int angle)  -- S5C6 "one constant" sine/cosine for the VR4300 (N64)
+# float trig_sin(int angle)  -- S5C6 "quantized" sine/cosine for the VR4300 (N64)
 #
 # Same fold, polynomials and code shape as s5c6_code.s, with its own
 # coefficients: only S1 is full precision (lui + ori); S3, S5, C2, C4 and C6
 # have 8 significant bits (low 16 bits zero), so each is one lui. No data.
 # Fewer instructions than s5c6_code.s, but less accurate (README: max error
 # 2.3e-5, max |s^2+c^2-1| 4.1e-5, sine not exactly odd at 45 degrees).
-# Coefficients: the best value-error fit with that constraint, fit/fit_one.py.
+# Coefficients: the best value-error fit with that constraint, fit/fit_quantized.py.
 #
 # angle: SM64/MM binary angle in $a0 (0x10000 = one turn; only bits 0-15 used)
 # result: sine in $f0.  For cosine call trig_sin(angle + 0x4000).

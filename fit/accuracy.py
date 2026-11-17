@@ -75,7 +75,7 @@ METHODS = [
     ('SM64 vanilla table', table()),
     ('Silas', silas()),
     ('S5C6 one cache line / pure code', s5c6(BFSK)),
-    ('S5C6 one constant', s5c6(ONE)),
+    ('S5C6 quantized', s5c6(ONE)),
 ]
 
 

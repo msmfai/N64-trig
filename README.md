@@ -52,11 +52,15 @@ This table compares S5C6 (the one-cache-line version) with Silas and with the SM
 
 ## Versions
 
-There are three versions of S5C6. All versions use the same fold and the same polynomial forms. They load the six coefficients into registers in different ways.
+There are three versions of S5C6. All versions use the same fold and the same polynomial forms. They load the six coefficients into registers in different ways:
 
-| | One cache line | Pure code | One constant |
+- **One cache line:** four coefficients come from one 16-byte data-cache line.
+- **Pure code:** all coefficients are in the instructions. There is no data.
+- **Quantized:** all coefficients are in the instructions, and five of the six are quantized to 8 significant bits. Each 8-bit coefficient needs only one `lui` instruction.
+
+| | One cache line | Pure code | Quantized |
 |---|---|---|---|
-| Files | [`kernel/sincos.s`](kernel/sincos.s), [`kernel/s5c6.s`](kernel/s5c6.s) | [`kernel/sincos_code.s`](kernel/sincos_code.s), [`kernel/s5c6_code.s`](kernel/s5c6_code.s) | [`kernel/sincos_one.s`](kernel/sincos_one.s), [`kernel/s5c6_one.s`](kernel/s5c6_one.s) |
+| Files | [`kernel/sincos.s`](kernel/sincos.s), [`kernel/s5c6.s`](kernel/s5c6.s) | [`kernel/sincos_code.s`](kernel/sincos_code.s), [`kernel/s5c6_code.s`](kernel/s5c6_code.s) | [`kernel/sincos_quantized.s`](kernel/sincos_quantized.s), [`kernel/s5c6_quantized.s`](kernel/s5c6_quantized.s) |
 | Load of c, f and 1.0 | One `lui` each | One `lui` each | One `lui` each |
 | Load of a, b, d and e | Read from one 16-byte data-cache line | `lui` + `ori` each | a: `lui` + `ori`. b, d and e: one `lui` each. |
 | Data | 16 B | None | None |
@@ -69,7 +73,7 @@ There are three versions of S5C6. All versions use the same fold and the same po
 
 - **One cache line** executes the fewest instructions. This is true only while its constant line is in the data cache. If the game removes the line from the cache, the call must wait for RAM.
 - **Pure code** cannot have a data-cache miss. It uses 24 more bytes of instruction cache. It is one file, with no `.rodata` to place or align.
-- **One constant** is pure code with 3 fewer instructions. The coefficients b, d and e have only 8 bits, so this version has its own coefficients ([`fit/fit_one.py`](fit/fit_one.py)). These coefficients are not fitted jointly, so the maximum of s² + c² − 1 is 240 times larger. This is important only where the code applies a rotation again and again to its own result. One example is the moving-platform code of SM64. On a platform, an object 1,000 units from the centre moves approximately 0.5 units per minute.
+- **Quantized** is pure code with 3 fewer instructions. Its coefficients b, d and e are quantized to 8 bits, so this version has its own coefficients ([`fit/fit_quantized.py`](fit/fit_quantized.py)). These coefficients are not fitted jointly, so the maximum of s² + c² − 1 is 240 times larger. This is important only where the code applies a rotation again and again to its own result. One example is the moving-platform code of SM64. On a platform, an object 1,000 units from the centre moves approximately 0.5 units per minute.
 - **In ares, the three versions have the same speed.** The differences are smaller than the differences between layouts. ares uses a fixed cost for each cache miss and does not simulate RAM contention. Thus, ares cannot show which version is the fastest on a console.
 
 ## Use
@@ -102,7 +106,7 @@ There are three versions of S5C6. All versions use the same fold and the same po
 
 `fit/accuracy.py` calculates the sine and the cosine of all 65,536 angles with each method. It uses float32 and the same operation order as the code of the method. The reference is float64.
 
-| | SM64 vanilla table | Silas | S5C6 (one cache line, pure code) | S5C6 one constant |
+| | SM64 vanilla table | Silas | S5C6 (one cache line, pure code) | S5C6 quantized |
 |---|---|---|---|---|
 | Max error | 1.44e-03 | 1.92e-04 | 1.45e-05 | 2.28e-05 |
 | Mean \|error\| | 4.58e-04 | 1.41e-05 | 4.97e-06 | 9.48e-06 |
@@ -118,10 +122,10 @@ There are three versions of S5C6. All versions use the same fold and the same po
 
 - **Table error:** Most of the error of the table comes from its 4,096 steps. The table rounds each angle down to a multiple of 16.
 - **Silas error:** Within 2 steps of 0° and 180°, 1 − c² rounds to 0. Thus the sine of Silas is exactly 0 at these angles. The largest error of Silas is at these angles.
-- **Scale of s² + c² − 1:** One float32 rounding step near 1.0 is 1.2e-7. The display-list matrices of the N64 (16.16 fixed point) round rotation values to 1.5e-5. This step is larger than the values of all methods, except the one-constant version.
-- **Drift:** Drift is the mean of s² + c² − 1. Drift is important only for a rotation that the code applies again and again to its own result. Example: at 30 frames per second, with a different angle in each frame, a length increases by 1 % in approximately 4 days with S5C6. With the one-constant version, this takes approximately 38 minutes. SM64 and MM make their matrices again from the angle in each frame. Thus, usual objects do not drift.
+- **Scale of s² + c² − 1:** One float32 rounding step near 1.0 is 1.2e-7. The display-list matrices of the N64 (16.16 fixed point) round rotation values to 1.5e-5. This step is larger than the values of all methods, except the quantized version.
+- **Drift:** Drift is the mean of s² + c² − 1. Drift is important only for a rotation that the code applies again and again to its own result. Example: at 30 frames per second, with a different angle in each frame, a length increases by 1 % in approximately 4 days with S5C6. With the quantized version, this takes approximately 38 minutes. SM64 and MM make their matrices again from the angle in each frame. Thus, usual objects do not drift.
 - **Direction error:** The difference between the direction of the (cos, sin) pair and the true angle.
-- **Symmetry of the one-constant version:** Its two polynomials do not meet exactly at 45°. Thus, near ±45°, the last bits of sin(−a) and −sin(a) can be different.
+- **Symmetry of the quantized version:** Its two polynomials do not meet exactly at 45°. Thus, near ±45°, the last bits of sin(−a) and −sin(a) can be different.
 
 ## Cost
 
@@ -144,7 +148,7 @@ This section gives three measurements. They go from the smallest scope to the la
 | | `trig_sincos` | 176 | 6 | 16 B | 39 / 41.5 / 44 | 7 | 0 |
 | S5C6 pure code | `trig_sin` | 192 | 6 | None | 26 / 27.5 / 29 | 4 | 0 |
 | | `trig_sincos` | 200 | 7 | None | 45 / 47.5 / 50 | 7 | 0 |
-| S5C6 one constant | `trig_sin` | 180 | 6 | None | 25 / 26.0 / 27 | 4 | 0 |
+| S5C6 quantized | `trig_sin` | 180 | 6 | None | 25 / 26.0 / 27 | 4 | 0 |
 | | `trig_sincos` | 188 | 6 | None | 42 / 44.5 / 47 | 7 | 0 |
 
 ### Cycles for each call
@@ -163,7 +167,7 @@ A timer in the ROM measures 65,536 calls in [ares](https://ares-emu.net) v148:
 | Silas | 65.5 | 65.5 | 132.0 | 93.0 |
 | S5C6 one cache line | 54.5 | 54.5 | 110.0 | 89.5 |
 | S5C6 pure code | 54.5 | 54.5 | 110.0 | 91.5 |
-| S5C6 one constant | 53.0 | 53.0 | 107.0 | 88.5 |
+| S5C6 quantized | 53.0 | 53.0 | 107.0 | 88.5 |
 
 - **The table is fast only while its lines are in the cache.** With angles in order, adjacent angles use the same cache line. With random angles, most lookups miss the 8 KB data cache. ares charges 40 cycles for each miss. The kernels have the same cost with angles in order and with random angles.
 - **One `trig_sincos` call saves 18–39 cycles**, compared with two calls.
@@ -189,12 +193,12 @@ Time in µs per frame, compared with the vanilla table. A negative value is fast
 | Silas | −9 (−276 to +461) | +75 (−257 to +400) | |
 | S5C6 one cache line | −71 (−322 to +396) | +77 (−325 to +303) | 62 (46 to 75) |
 | S5C6 pure code | −75 (−297 to +356) | +92 (−319 to +321) | 66 (21 to 105) |
-| S5C6 one constant | −83 (−331 to +374) | +81 (−328 to +310) | 73 (55 to 88) |
+| S5C6 quantized | −83 (−331 to +374) | +81 (−328 to +310) | 73 (55 to 88) |
 
 - **Sincos** is the main result. [`bench/hsm64-sincos.patch`](bench/hsm64-sincos.patch) changes 13 functions to use `sincoss()`. These 13 functions make 98 % of the sine and cosine pairs in SM64.
 - **Separate calls:** the call sites of the game do not change.
 - **A call can be faster than a table lookup.** A call executes more instructions than a lookup. But a call does not cause the data-cache misses of the table. Also, a call site is smaller than an inline lookup, so there are fewer instruction-cache misses. With sincos, compared with the table, S5C6 has 150–201 fewer data-cache misses and 484–516 fewer instruction-cache misses per frame. Silas has 188 and 358 fewer.
-- **Same-game control:** Each kernel changes the game slightly. Thus, the run with a kernel is not exactly the same as the run with the table. In the run with the one-cache-line version, Mario stays within 0.06 units of the vanilla run. As a second control, each kernel was compared with a table that the ROM fills at boot with the values of that kernel. These two runs play the same game (checked in each frame). With separate calls, the means of this control are: Silas +36, one cache line −17, pure code −29, one constant −69 µs.
+- **Same-game control:** Each kernel changes the game slightly. Thus, the run with a kernel is not exactly the same as the run with the table. In the run with the one-cache-line version, Mario stays within 0.06 units of the vanilla run. As a second control, each kernel was compared with a table that the ROM fills at boot with the values of that kernel. These two runs play the same game (checked in each frame). With separate calls, the means of this control are: Silas +36, one cache line −17, pure code −29, quantized −69 µs.
 
 ## Checks
 
@@ -219,7 +223,7 @@ Time in µs per frame, compared with the vanilla table. A negative value is fast
 ```sh
 python3 fit/accuracy.py                              # the accuracy table (needs numpy)
 python3 fit/fit.py                                   # S5C6 coefficients -> fit/coeffs.h
-python3 fit/fit_one.py [--table]                     # one-constant coefficients
+python3 fit/fit_quantized.py [--table]               # quantized coefficients
 python3 bench/footprint.py --binutils DIR --clang DIR [--elf-dir work/HackerSM64-sincos]
 python3 bench/build.py --baserom sm64.us.z64 --clang BIN --binutils BIN [--pad N] [--variants kernels sincos] [--cycles] [--hardware]
 python3 bench/run.py [--variants kernels sincos] [--suffix=-padN | --suffix=-cyc]

@@ -8,7 +8,7 @@ index e590b59b..7a5fedfa 100644
  
 +# Trig benchmark (an external kit, not part of HackerSM64); see
 +# src/engine/math_util.h. TRIG_FUNC: 0 none, 1 Silas, 2 BFSK (C); 4 Silas, 5 BFSK,
-+# 6 BFSK with 4 loaded constants, 7 LUTX16, 8 one constant (assembly). TRIG_USE: 0 table
++# 6 BFSK with 4 loaded constants, 7 LUTX16, 8 quantized (assembly). TRIG_USE: 0 table
 +# lookups, 1 calls. TRIG_QUANT=1 cuts a call's angle to the table's steps.
 +# TRIG_COUNT=1 counts sins/coss calls. TRIG_SINCOS=1: in a call build,
 +# sincoss() makes one trig_sincos call for both values. TRIG_SITES=1 reports

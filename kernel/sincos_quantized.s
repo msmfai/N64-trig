@@ -2,10 +2,10 @@
 # turn) for the N64 VR4300. Sine in $f0, cosine in $f2. Uses $t0-$t7 and
 # $f0-$f16 only (all caller-saved). Max error 2.3e-5.
 # S(x) = x(a + x^2(b + cx^2)), C(x) = 1 + x^2(d + x^2(e + fx^2)), x in +-1/8 turn.
-# "One constant": only a (S1) is full precision (lui + ori); b, c, d, e, f have
+# "Quantized": only a (S1) is full precision (lui + ori); b, c, d, e, f have
 # 8 significant bits, one lui each. No data, 3 fewer instructions than
 # sincos_code.s, 3 more than sincos.s, and less accurate than both (its own
-# coefficients, fit/fit_one.py). The three versions: README.md.
+# coefficients, fit/fit_quantized.py). The three versions: README.md.
 
     .set noreorder
     .set noat
