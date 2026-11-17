@@ -22,7 +22,8 @@ Variants, as (TRIG_FUNC, TRIG_USE): a "t" prefix is the table build of the
 same values (sins/coss stay table lookups, the table is refilled at boot from
 the kernel), the other is the call build. Compare only the two of a pair.
 A "-sc" variant is the call build with sin and cos of one angle from one
-trig_sincos call; compare it with vanilla-sc.
+trig_sincos call; compare it with vanilla-sc. A "-sci" variant is the same
+with the kernel inline at each sincoss() site (bench/sincos_inline.h).
 Your base ROM and the built ROMs are Nintendo's; do not distribute them.
 """
 import argparse
@@ -50,15 +51,22 @@ VARIANTS = {
     # combined sin+cos at the converted call sites (hsm64-sincos.patch)
     'vanilla-sc': (0, 0), 'asilas-sc': (4, 1), 'abfsk-sc': (5, 1), 'abfskl-sc': (6, 1), 'alutx-sc': (7, 1),
     'aone-sc': (8, 1),
+    # the same, with the kernel inline at each sincoss() site (bench/sincos_inline.h): no call
+    'abfsk-sci': (5, 1), 'aone-sci': (8, 1),
 }
 GROUPS = {'kernels': ['tasilas', 'asilas', 'tabfsk', 'abfsk', 'tabfskl', 'abfskl', 'talutx', 'alutx', 'taone', 'aone'],
           'c': ['tsilas', 'silas', 'tbfsk', 'bfsk'],
-          'sincos': ['vanilla-sc', 'asilas-sc', 'abfsk-sc', 'abfskl-sc', 'alutx-sc', 'aone-sc']}
+          'sincos': ['vanilla-sc', 'asilas-sc', 'abfsk-sc', 'abfskl-sc', 'alutx-sc', 'aone-sc'],
+          'inline': ['abfsk-sci', 'aone-sci']}
 SOURCES = ('trig_impl.c', 'trig_bench.c', 'trig_bench.h', 'trig_kernels.s')
 
 
 def run(cmd, **kw):
     subprocess.run([str(c) for c in cmd], check=True, **kw)
+
+
+def is_sincos(variant):
+    return variant.endswith('-sc') or variant.endswith('-sci')
 
 
 def sincos_tree(tree):
@@ -83,6 +91,7 @@ def prepare(tree, baserom, patches=('hsm64-bench.patch',)):
     for name in SOURCES:
         shutil.copy2(HERE / name, tree / 'src/game' / name)
     shutil.copy2(REPO / 'fit/coeffs.h', tree / 'src/game/trig_coeffs.h')
+    shutil.copy2(HERE / 'sincos_inline.h', tree / 'src/engine/sincos_inline.h')
 
 
 def clang_shims(clang, shims):
@@ -106,7 +115,7 @@ def clang_shims(clang, shims):
 
 def build(tree, variant, args, env):
     func, use = VARIANTS[variant]
-    sincos = variant.endswith('-sc')
+    sincos = is_sincos(variant)
     if sincos:
         tree = sincos_tree(tree)
     out = (f'build-{variant}' + ('-count' if args.count else '') + ('-hw' if args.hardware else '')
@@ -115,7 +124,7 @@ def build(tree, variant, args, env):
     cmd = [args.make, '-C', tree, 'VERSION=us', f'BUILD_DIR_BASE={out}', 'TRIG_BENCH=1',
            f'TRIG_FUNC={func}', f'TRIG_USE={use}', 'TRIG_QUANT=1', f'TRIG_COUNT={int(args.count)}',
            f'TRIG_PAD={args.pad}', f'TRIG_SINCOS={int(sincos)}',
-           f'TRIG_EMUX={int(not args.hardware)}', f'TRIG_CYCLES={int(args.cycles)}', f'-j{args.jobs}']
+           f'TRIG_EMUX={int(not args.hardware)}', f'TRIG_CYCLES={int(args.cycles)}', f'TRIG_INLINE={int(variant.endswith("-sci"))}', f'-j{args.jobs}']
     if args.clang:
         cmd.insert(3, 'COMPILER=clang')
     log = tree / f'{out}.log'
@@ -145,7 +154,7 @@ def main():
     tree = args.hsm64.resolve()
     variants = [w for v in args.variants for w in GROUPS.get(v, [v])]
     prepare(tree, args.baserom)
-    if any(v.endswith('-sc') for v in variants):
+    if any(is_sincos(v) for v in variants):
         prepare(sincos_tree(tree), args.baserom or tree / 'baserom.us.z64',
                 ('hsm64-bench.patch', 'hsm64-sincos.patch'))
     path = os.environ['PATH']

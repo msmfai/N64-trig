@@ -44,7 +44,8 @@ PAIRS = [('tsilas', 'silas'), ('tbfsk', 'bfsk'), ('tasilas', 'asilas'), ('tabfsk
          ('tabfskl', 'abfskl'), ('talutx', 'alutx'), ('taone', 'aone')]
 GROUPS = {'kernels': ['tasilas', 'asilas', 'tabfsk', 'abfsk', 'tabfskl', 'abfskl', 'talutx', 'alutx', 'taone', 'aone'],
           'c': ['tsilas', 'silas', 'tbfsk', 'bfsk'],
-          'sincos': ['vanilla-sc', 'asilas-sc', 'abfsk-sc', 'abfskl-sc', 'alutx-sc', 'aone-sc']}
+          'sincos': ['vanilla-sc', 'asilas-sc', 'abfsk-sc', 'abfskl-sc', 'alutx-sc', 'aone-sc'],
+          'inline': ['abfsk-sci', 'aone-sci']}
 SETTINGS = """Video
   Driver: None
 Audio
@@ -241,7 +242,7 @@ def report(results):
         base = usec(*total(results['vanilla-sc'])[:2])
         print('\ncombined sin+cos (trig_sincos at the converted call sites) against vanilla-sc (table, same source)')
         for v, r in results.items():
-            if r and v.endswith('-sc') and v != 'vanilla-sc':
+            if r and v.endswith(('-sc', '-sci')) and v != 'vanilla-sc':
                 t = usec(*total(r)[:2])
                 print(f'  {v:11}{t:9.0f}{t - base:+8.0f} us {100 * (t / base - 1):+5.2f}%')
 
@@ -295,7 +296,7 @@ def main():
     ap.add_argument('--out', type=Path, default=REPO / 'work/results.json')
     args = ap.parse_args()
     variants = [w for v in args.variants for w in GROUPS.get(v, [v])]
-    tree = lambda v: args.hsm64.with_name(args.hsm64.name + '-sincos') if v.endswith('-sc') else args.hsm64
+    tree = lambda v: args.hsm64.with_name(args.hsm64.name + '-sincos') if v.endswith(('-sc', '-sci')) else args.hsm64
     roms = {v: tree(v) / f'build-{v}{args.suffix}' / 'us_n64/sm64.z64' for v in variants}
     missing = [str(p) for p in roms.values() if not p.exists()]
     if missing:
