@@ -97,13 +97,13 @@ S(x) = √(1 − C(x)²)</pre>
 <h2>Speed</h2>
 <div class="scroll"><table>
 <caption>Separate calls: game-thread µs/frame against the table</caption>
-<tr><th></th><th>layout 0</th><th>1024</th><th>4096</th><th>mean</th></tr>
+<tr><th></th><th>code not moved</th><th>moved 1 KB</th><th>moved 4 KB</th><th>mean</th></tr>
 <tr><td><a href="#g-table">vanilla table</a> (µs/frame)</td><td>12,433</td><td>12,471</td><td>11,967</td><td>0</td></tr>
 <tr><td><a href="#g-s5c6">S5C6</a> <a href="#g-line">line</a></td><td>+253</td><td>−325</td><td>+303</td><td>+77</td></tr><tr><td><a href="#g-s5c6">S5C6</a> <a href="#g-code">code</a></td><td>+273</td><td>−319</td><td>+321</td><td>+92</td></tr><tr><td><a href="#g-s5c6">S5C6</a> quantized</td><td>+261</td><td>−328</td><td>+310</td><td>+81</td></tr><tr><td><a href="#g-silas">Silas</a></td><td>+81</td><td>−257</td><td>+400</td><td>+75</td></tr><tr><td><a href="#g-lutx16">LUTX16</a></td><td>+329</td><td>−276</td><td>+357</td><td>+137</td></tr>
 </table></div>
 <div class="scroll"><table>
 <caption>Combined sincos at the converted call sites: µs/frame against the table built from the same source</caption>
-<tr><th></th><th>layout 0</th><th>1024</th><th>4096</th><th>mean</th></tr>
+<tr><th></th><th>code not moved</th><th>moved 1 KB</th><th>moved 4 KB</th><th>mean</th></tr>
 <tr><td><a href="#g-table">vanilla table</a> (µs/frame)</td><td>12,436</td><td>12,471</td><td>11,967</td><td>0</td></tr>
 <tr><td><a href="#g-s5c6">S5C6</a> <a href="#g-line">line</a></td><td>−322</td><td>−288</td><td>+396</td><td>−71</td></tr><tr><td><a href="#g-s5c6">S5C6</a> <a href="#g-code">code</a></td><td>−297</td><td>−285</td><td>+356</td><td>−75</td></tr><tr><td><a href="#g-s5c6">S5C6</a> quantized</td><td>−331</td><td>−290</td><td>+374</td><td>−83</td></tr><tr><td><a href="#g-silas">Silas</a></td><td>−276</td><td>−213</td><td>+461</td><td>−9</td></tr><tr><td><a href="#g-lutx16">LUTX16</a></td><td>−289</td><td>−214</td><td>+377</td><td>−42</td></tr>
 </table></div>
@@ -114,7 +114,7 @@ S(x) = √(1 − C(x)²)</pre>
 </table></div>
 <div class="scroll"><table>
 <caption>S5C6 against Silas, both combined: µs/frame saved</caption>
-<tr><th></th><th>layout 0</th><th>1024</th><th>4096</th><th>mean</th></tr>
+<tr><th></th><th>code not moved</th><th>moved 1 KB</th><th>moved 4 KB</th><th>mean</th></tr>
 <tr><td><a href="#g-s5c6">S5C6</a> <a href="#g-line">line</a></td><td>46</td><td>75</td><td>66</td><td>62</td></tr><tr><td><a href="#g-s5c6">S5C6</a> <a href="#g-code">code</a></td><td>21</td><td>72</td><td>105</td><td>66</td></tr><tr><td><a href="#g-s5c6">S5C6</a> quantized</td><td>55</td><td>77</td><td>88</td><td>73</td></tr>
 </table></div>
 <ul>

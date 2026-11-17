@@ -52,14 +52,14 @@ def row(label, vals, fmt='{:+.0f}'):
 
 def main():
     data = {L: load(L) for L in LAYOUTS}
-    head = '| | layout 0 | layout 1024 | layout 4096 | mean |\n|---|---|---|---|---|'
+    head = '| | code not moved | code moved 1 KB | code moved 4 KB | mean |\n|---|---|---|---|---|'
 
     def mean_us(build, L_get):
         return sum(per_frame(L_get(L)[build])['us'] for L in LAYOUTS) / len(LAYOUTS)
     van = json.loads((RES / 'vanilla.json').read_text())
     t_sc = mean_us('vanilla-sc', lambda L: data[L])
     t_sep = sum(per_frame(van[f'vanilla-pad{L}'])['us'] for L in LAYOUTS) / len(LAYOUTS)
-    print('Headline: game-thread µs per frame, SM64 demos, mean of the 3 layouts '
+    print('Headline: game-thread µs per frame, SM64 demos, mean of the 3 code shifts '
           '(in brackets: difference from the table):\n')
     print('| | `sincoss()` at the 13 changed call sites | Call sites unchanged (`sins()`, `coss()`) |\n|---|---|---|')
     print(f'| SM64 vanilla table | {t_sc:,.0f} | {t_sep:,.0f} |')
@@ -100,7 +100,7 @@ def main():
     for label, _, _, sc in KERNELS[1:]:
         print(row(label, [per_frame(data[L]['asilas-sc'])['us'] - per_frame(data[L][sc])['us'] for L in LAYOUTS]))
 
-    print('\nsincoss(): cache misses per frame against the vanilla table, mean of the 3 layouts '
+    print('\nsincoss(): cache misses per frame against the vanilla table, mean of the 3 code shifts '
           '(whole machine; ares charges 40 cycles per data-cache miss or write-back, 48 per instruction-cache miss):\n')
     print('| | data-cache misses | write-backs | instruction-cache misses |\n|---|---|---|---|')
     for label, _, _, sc in KERNELS:
