@@ -35,12 +35,13 @@ Three design decisions make S5C6 fast:
 | `trig_sin` | A kernel function that returns one value. For the cosine, call `trig_sin(angle + 0x4000)`. |
 | `trig_sincos` | A kernel function that returns the sine and the cosine of one angle. One call costs less than two `trig_sin` calls. |
 | s² + c² − 1 | A measure of how well a sine and a cosine agree. A rotation made from them changes lengths by approximately half of this value. |
+| Code shift | The benchmark builds each ROM three times: with the code not moved, moved 1 KB, and moved 4 KB. The move changes which functions use the same instruction-cache lines. This changes each in-game result by up to approximately ±3 %, by chance. Thus, the in-game results are the mean of the three code shifts. |
 
 ## Summary
 
 ### Speed
 
-Game-thread CPU time in µs per frame. Benchmark: the seven attract-mode demos of SM64 (4,304 frames) on HackerSM64, in ares v148. Each value is the mean of three code layouts. The value in brackets is the difference from the SM64 vanilla table. A negative difference is faster than the table. Refer to [In the game](#in-the-game) for the method.
+Game-thread CPU time in µs per frame. Benchmark: the seven attract-mode demos of SM64 (4,304 frames) on HackerSM64, in ares v148. Each value is the mean of the three code shifts. The value in brackets is the difference from the SM64 vanilla table. A negative difference is faster than the table. Refer to [In the game](#in-the-game) for the method.
 
 | | `sincoss()` at the 13 changed call sites | Call sites unchanged (separate `sins()` and `coss()` calls) |
 |---|---|---|
@@ -65,7 +66,7 @@ S5C6 (one cache line and pure code) compared with Silas and with the SM64 vanill
 - With `sincoss()`, S5C6 saves 62 to 73 µs per frame, compared with Silas.
 - The maximum error of S5C6 is 13 times smaller than the maximum error of Silas. It is 100 times smaller than the maximum error of the table.
 - The sine and the cosine of Silas agree slightly better, because Silas calculates one value from the other. Both methods are within approximately 1.5 float32 rounding steps.
-- The position of the code in memory changes all in-game results by approximately ±3 %. Thus, the in-game results are the mean of three layouts. Refer to [In the game](#in-the-game).
+- The code shift changes all in-game results by up to approximately ±3 %. Thus, the in-game results are the mean of the three code shifts. Refer to [In the game](#in-the-game).
 - All measurements come from the ares emulator. **The kernels are not tested on a real N64.**
 
 ## Versions
@@ -92,7 +93,7 @@ There are three versions of S5C6. All versions use the same fold and the same po
 - **One cache line** executes the fewest instructions. This is true only while its constant line is in the data cache. If the game removes the line from the cache, the call must wait for RAM.
 - **Pure code** cannot have a data-cache miss. It uses 24 more bytes of instruction cache. It is one file, with no `.rodata` to place or align.
 - **Quantized** is pure code with 3 fewer instructions. Its coefficients b, d and e are quantized to 8 bits, so this version has its own coefficients ([`fit/fit_quantized.py`](fit/fit_quantized.py)). These coefficients are not fitted jointly, so the maximum of s² + c² − 1 is 240 times larger. This is important only where the code applies a rotation again and again to its own result. One example is the moving-platform code of SM64. On a platform, an object 1,000 units from the centre moves approximately 0.5 units per minute.
-- **In ares, the three versions have the same speed.** The differences are smaller than the differences between layouts. ares uses a fixed cost for each cache miss and does not simulate RAM contention. Thus, ares cannot show which version is the fastest on a console.
+- **In ares, the three versions have the same speed.** The differences are smaller than the differences between code shifts. ares uses a fixed cost for each cache miss and does not simulate RAM contention. Thus, ares cannot show which version is the fastest on a console.
 
 ## Use
 
@@ -204,7 +205,15 @@ A timer in the ROM measures 65,536 calls in [ares](https://ares-emu.net) v148:
 | Measurement | The HackerSM64 profiler: CPU time of the game thread, in µs per frame. Audio is not included. |
 | Baseline | The vanilla table: 12,290 µs per frame |
 
-**Layouts:** The position of code in memory changes which code shares cache lines. This alone changes each result by approximately ±3 %. Thus, each build was made three times, with 0, 1024 or 4096 bytes of padding before the kernel. The table below gives the mean of the three layouts. The brackets give the lowest and the highest value. To get the values for each layout, run `python3 bench/summary.py`.
+**Code shifts:** The VR4300 instruction cache is 16 KB. Two functions that are 16 KB apart in memory use the same cache lines and remove each other from the cache. Thus, if code moves, different functions collide, and the result changes by up to approximately ±3 %. This change is chance, not an effect of the kernel. To show it, each build was made three times:
+
+| Code shift | Change to the build |
+|---|---|
+| Code not moved | None. |
+| Code moved 1 KB | 1,024 bytes of padding before the kernel. The kernel and all code after it move 1 KB. |
+| Code moved 4 KB | 4,096 bytes of padding before the kernel. The kernel and all code after it move 4 KB. |
+
+The table below gives the mean of the three code shifts. The brackets give the lowest and the highest value. To get the value for each code shift, run `python3 bench/summary.py`.
 
 Time in µs per frame, compared with the vanilla table. A negative value is faster than the table.
 
@@ -251,7 +260,7 @@ python3 bench/summary.py                             # the speed tables (headlin
 ```
 
 - `bench/hsm64-bench.patch` adds the benchmark to HackerSM64.
-- A `--cycles` build adds the timer for the cycles for each call. These builds are separate, because the code of the timer changes the layout.
+- A `--cycles` build adds the timer for the cycles for each call. These builds are separate, because the code of the timer moves the code after it.
 - ares is deterministic: a ROM gives the same cycles in each run. Thus, results saved at different times can be combined. Control ROMs built again gave exactly the saved results.
 
 The full report (method, call-site analysis, LUTX16 and glossary) is at https://msmfai.github.io/N64-trig/.
