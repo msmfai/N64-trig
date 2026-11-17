@@ -47,7 +47,7 @@ LINE = {'d': 16, 'w': 16, 'i': 32}             # bytes per data miss, write-back
 # Student t, 0.975 quantile, by degrees of freedom
 T975 = {1: 12.71, 2: 4.303, 3: 3.182, 4: 2.776, 5: 2.571, 6: 2.447, 7: 2.365, 8: 2.306, 9: 2.262, 10: 2.228,
         11: 2.201, 12: 2.179, 13: 2.160, 14: 2.145, 15: 2.131, 16: 2.120, 18: 2.101, 20: 2.086, 25: 2.060,
-        30: 2.042}
+        30: 2.042, 40: 2.021, 50: 2.009, 60: 2.000, 80: 1.990, 100: 1.984, 120: 1.980}
 
 
 def load_all():
@@ -85,7 +85,9 @@ def mean_ci(v):
     if n < 2:
         return m, float('nan')
     sd = math.sqrt(sum((x - m) ** 2 for x in v) / (n - 1))
-    return m, T975.get(n - 1, 2.0) * sd / math.sqrt(n)
+    df = n - 1
+    t = T975.get(df) or T975[max(k for k in T975 if k <= df)]
+    return m, t * sd / math.sqrt(n)
 
 
 def sign(x):
@@ -116,11 +118,22 @@ def table(data, shifts, key, title):
         print(f'| {label} | {cell(data, shifts, sc, BASE[2], key)} | {cell(data, shifts, c, BASE[1], key)} |')
 
 
+def load_samples():
+    """{sample index: {build: result}} from bench/sample.py."""
+    out = {}
+    for p in sorted((RES / 'samples').glob('s*.json')):
+        out[int(p.stem[1:])] = {k: v for k, v in json.loads(p.read_text())['results'].items() if v}
+    return out
+
+
 def main():
-    data = load_all()
+    data = load_samples()
+    what = 'samples (bench/sample.py)'
+    if not data:
+        data, what = load_all(), 'code shifts'
     shifts = sorted(s for s, d in data.items() if all(b in d for b in BUILDS))
-    print(f'{len(shifts)} code shifts. Every value: mean over the code shifts ± 95 % confidence interval. '
-          'In brackets: difference from Silas at the same code shift.\n')
+    print(f'{len(shifts)} {what}. Every value: mean over the samples ± 95 % confidence interval. '
+          'In brackets: difference from Silas in the same sample.\n')
     table(data, shifts, 'bytes', 'Memory traffic, bytes per frame moved over the RDRAM bus by cache misses:')
     print()
     table(data, shifts, 'us', 'Game-thread CPU time, µs per frame:')

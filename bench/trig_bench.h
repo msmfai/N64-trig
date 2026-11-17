@@ -67,6 +67,9 @@ extern u32 gTrigBenchT4Ticks;
 /* Once, after the engine segment is loaded: refill the sine table from
  * trig_sin when the build asks for table lookups of a polynomial's values. */
 void trig_bench_init(void);
+#if defined(__GNUC__) && defined(TRIG_DPAD) && TRIG_DPAD > 0
+extern char gTrigDataPad[];
+#endif
 /* Title screen, once per frame. Returns TRUE when the benchmark has finished
  * (the results are then drawn and no further demo should start). */
 s32 trig_bench_title(void);

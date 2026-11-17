@@ -121,9 +121,11 @@ def build(tree, variant, args, env):
     out = (f'build-{variant}' + ('-count' if args.count else '') + ('-hw' if args.hardware else '')
            + ('-cyc' if args.cycles else '')
            + (f'-pad{args.pad}' if args.pad else ''))
+    if getattr(args, 'slot', None):              # bench/shifts.py: one reused build directory per variant
+        out = f'build-{variant}-{args.slot}'
     cmd = [args.make, '-C', tree, 'VERSION=us', f'BUILD_DIR_BASE={out}', 'TRIG_BENCH=1',
            f'TRIG_FUNC={func}', f'TRIG_USE={use}', 'TRIG_QUANT=1', f'TRIG_COUNT={int(args.count)}',
-           f'TRIG_PAD={args.pad}', f'TRIG_SINCOS={int(sincos)}',
+           f'TRIG_PAD={args.pad}', f'TRIG_DPAD={getattr(args, "dpad", 0)}', f'TRIG_HEAPPAD={getattr(args, "heappad", 0)}', f'TRIG_SEED={getattr(args, "seed", 0)}', f'TRIG_SINCOS={int(sincos)}',
            f'TRIG_EMUX={int(not args.hardware)}', f'TRIG_CYCLES={int(args.cycles)}', f'TRIG_INLINE={int(variant.endswith("-sci"))}', f'-j{args.jobs}']
     if args.clang:
         cmd.insert(3, 'COMPILER=clang')
@@ -132,11 +134,12 @@ def build(tree, variant, args, env):
         result = subprocess.run([str(c) for c in cmd], env=env, stdout=f, stderr=subprocess.STDOUT)
     if result.returncode:
         raise SystemExit(f'{variant}: build failed, see {log}')
-    print(tree / out / 'us_n64/sm64.z64')
+    rom = tree / out / 'us_n64/sm64.z64'
+    print(rom)
+    return rom
 
 
-def main():
-    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+def add_args(ap):
     ap.add_argument('--variants', nargs='+', default=['kernels'], choices=list(VARIANTS) + list(GROUPS))
     ap.add_argument('--baserom', type=Path, help='US Super Mario 64 ROM (.z64), needed for the first build')
     ap.add_argument('--hsm64', type=Path, default=REPO / 'work/HackerSM64', help='HackerSM64 tree')
@@ -150,9 +153,11 @@ def main():
     ap.add_argument('--pad', type=int, default=0, help='layout control: bytes of padding before trig_sin')
     ap.add_argument('--make', default='gmake' if platform.system() == 'Darwin' else 'make')
     ap.add_argument('--jobs', type=int, default=max(1, (os.cpu_count() or 4) - 2))
-    args = ap.parse_args()
+
+
+def setup(args, variants):
+    """Prepare the trees for these variants; return the main tree and the build environment."""
     tree = args.hsm64.resolve()
-    variants = [w for v in args.variants for w in GROUPS.get(v, [v])]
     prepare(tree, args.baserom)
     if any(is_sincos(v) for v in variants):
         prepare(sincos_tree(tree), args.baserom or tree / 'baserom.us.z64',
@@ -164,7 +169,15 @@ def main():
         shims = tree.parent / 'clang-shims'
         clang_shims(args.clang.resolve(), shims)
         path = f'{shims}:{path}'
-    env = dict(os.environ, PATH=path)
+    return tree, dict(os.environ, PATH=path)
+
+
+def main():
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    add_args(ap)
+    args = ap.parse_args()
+    variants = [w for v in args.variants for w in GROUPS.get(v, [v])]
+    tree, env = setup(args, variants)
     for v in variants:
         build(tree, v, args, env)
 

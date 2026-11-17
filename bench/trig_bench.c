@@ -118,6 +118,19 @@ void trig_bench_init(void) {
     /* Referencing the layout padding keeps the linker from discarding it. */
     gTrigBench.pad = (u32) (uintptr_t) gTrigPad;
 #endif
+#if defined(__GNUC__) && defined(TRIG_DPAD) && TRIG_DPAD > 0
+    gTrigDataPad[0] = 1;
+#endif
+#if defined(TRIG_SEED) && TRIG_SEED > 0
+    /* Game condition (bench/sample.py): start the game's random generator
+     * TRIG_SEED steps later, so objects make different random choices. */
+    {
+        s32 n;
+        for (n = 0; n < TRIG_SEED; n++) {
+            random_u16();
+        }
+    }
+#endif
 #if TRIG_FUNC != 0 && TRIG_USE == 0
     /* gSineTable (0x400 entries) runs on into gCosineTable (0x1000): entry k
      * of the pair is the sine of table step k, for k up to 0x13FF. */
