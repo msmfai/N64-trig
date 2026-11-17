@@ -4,7 +4,8 @@
   python3 bench/readme.py [--check]
 
 The README has blocks between <!-- gen:NAME --> and <!-- /gen:NAME -->.
-This script replaces the text of each block. It uses the samples of
+This script replaces the text of each block: tables and the method only, no
+statements about the results. It uses the samples of
 bench/sample.py when there are at least MIN_SAMPLES of them, otherwise the
 16 fixed code shifts. --check: exit 1 if the README is not up to date.
 """
@@ -53,23 +54,6 @@ def table(data, ids, key):
     return '|' + SEP + rows
 
 
-def verdict(data, ids, key, noun, criterion, unit):
-    """One sentence for each kernel and mode whose difference interval excludes 0; else 'the same'.
-    Also returns the significant differences as (mean, half-width)."""
-    out, sig = [], []
-    for label, c, sc in S.KERNELS:
-        for mode, b, base in (('with `sincoss()`', sc, S.BASE[2]), ('with separate calls', c, S.BASE[1])):
-            m, h = S.mean_ci(S.diffs(data, ids, b, base, key))
-            if abs(m) > h:
-                sig.append((m, h))
-                out.append(f'{label} {mode}: {abs(m):,.0f} {unit} {"less" if m < 0 else "more"} than Silas '
-                           f'({S.fmt(m, h)}).')
-    if not out:
-        return f'- **{criterion}:** S5C6 and Silas have the same {noun}. Each difference interval contains 0.\n', sig
-    return (f'- **{criterion}:** ' + ' '.join(out) + ' All other differences contain 0: there, S5C6 and Silas '
-            f'have the same {noun}.\n', sig)
-
-
 def blocks():
     data, ids, sampled = dataset()
     n = len(ids)
@@ -77,35 +61,16 @@ def blocks():
     by = S.mean_ci([S.per_frame(data[i][S.BASE[2]])['bytes'] for i in ids])
     us = S.mean_ci([S.per_frame(data[i][S.BASE[2]])['us'] for i in ids])
     k = S.KERNELS[0]
-    t_line, t_sig = verdict(data, ids, 'bytes', 'memory traffic', 'Criterion 1', 'bytes per frame')
-    c_line, c_sig = verdict(data, ids, 'us', 'CPU time', 'Criterion 2', 'µs per frame')
-    widest = max(S.mean_ci(S.diffs(data, ids, b, base, 'bytes'))[1]
-                 for _, c, sc in S.KERNELS for b, base in ((sc, S.BASE[2]), (c, S.BASE[1])))
     g = {}
     g['summary-table'] = (
         '| | Silas | S5C6 (one cache line) |\n|---|---|---|\n'
-        '| Max error | 1.92e-4 | **1.45e-5** (13 times smaller) |\n'
-        '| CPU cycles for one sine and one cosine (exact) | 93.0 | **89.5** |\n'
-        '| CPU cycles for one sine (exact) | 65.5 | **54.5** |\n'
+        '| Max error | 1.92e-4 | 1.45e-5 |\n'
+        '| CPU cycles for one sine and one cosine (exact) | 93.0 | 89.5 |\n'
+        '| CPU cycles for one sine (exact) | 65.5 | 54.5 |\n'
         f'| Memory traffic in the game, bytes per frame | {by[0]:,.0f} ± {by[1]:,.0f} | '
         f'{S.cell(data, ids, k[2], S.BASE[2], "bytes")} |\n'
         f'| CPU time in the game, µs per frame | {us[0]:,.0f} ± {us[1]:,.0f} | '
         f'{S.cell(data, ids, k[2], S.BASE[2], "us")} |\n')
-    traffic = ('the same memory traffic as Silas' if not t_sig else
-               'less memory traffic than Silas' if all(m < 0 for m, _ in t_sig) else
-               'more memory traffic than Silas in some builds (refer to experiment 3)')
-    if not c_sig:
-        cpu, cost = 'the same CPU time', 'for the same cost'
-    elif all(m < 0 for m, _ in c_sig):
-        cpu = (f'the same or less CPU time: up to {max(-m for m, _ in c_sig):,.0f} µs per frame less '
-               '(refer to experiment 4)')
-        cost = 'for the same or a lower cost'
-    else:
-        cpu, cost = 'more CPU time in some builds (refer to experiment 4)', None
-    g['summary-claim'] = f'- In the game, S5C6 has {traffic} and {cpu}.\n'
-    if cost and not (t_sig and any(m > 0 for m, _ in t_sig)):
-        g['summary-claim'] += f'- Thus, S5C6 gives 13 times the accuracy {cost}.\n'
-
     if sampled:
         g['method'] = METHOD_HEAD.format(emulator=EMU_SAMPLES) + (
             f'| Test conditions | {n} samples. Each sample is one random draw of the four conditions below '
@@ -123,9 +88,9 @@ def blocks():
             '| Heap shift | 0 to 8 KB added to the start of the main pool, in 16-byte steps | Data-cache '
             'collisions of all data that the game allocates at run time |\n'
             '| Game seed | 0 to 65,113 steps of the random generator of the game, at boot | The random choices '
-            'of the objects. The path of Mario stays the same: the demos give the same input. |\n\n'
+            'of the objects. The demos give the same input. |\n\n'
             'All four conditions are uniform and independent. Each sample has its own random generator, so the '
-            'samples are independent.\n')
+            'samples are independent. New samples are added over time. The tables include all finished samples.\n')
     else:
         g['method'] = METHOD_HEAD.format(emulator='ares v148') + (
             f'| Code shifts | Each build is made {n} times, with 0 to 15 KB of padding before the kernel, in 1 KB '
@@ -136,11 +101,8 @@ def blocks():
             'memory use the same cache lines and remove each other from the cache. If code moves, different '
             'functions collide, and the result changes by chance, by up to approximately ±3 %. The code shifts '
             'cover one full period of the cache in equal steps.\n')
-    g['traffic'] = (table(data, ids, 'bytes') + '\n' + t_line +
-                    f'- Each difference interval is {100 * widest / by[0]:.1f} % of the total traffic or less.\n'
-                    '- Neither kernel reads a table. The kernels differ only in code size: 32 to 80 bytes when the '
-                    'code is not in the cache.\n')
-    g['cputime'] = table(data, ids, 'us') + '\n' + c_line
+    g['traffic'] = table(data, ids, 'bytes')
+    g['cputime'] = table(data, ids, 'us')
     return g, n, unit
 
 
