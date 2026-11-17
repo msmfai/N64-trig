@@ -15,8 +15,8 @@ S5C6 is a sine and cosine kernel for the N64 CPU (VR4300). This repository compa
 | Max error | 1.92e-4 | **1.45e-5** (13 times smaller) |
 | CPU cycles for one sine and one cosine (exact) | 93.0 | **89.5** |
 | CPU cycles for one sine (exact) | 65.5 | **54.5** |
-| Memory traffic in the game, bytes per frame | 543,894 ± 7,050 | 544,745 ± 6,360 (+851 ± 3,289) |
-| CPU time in the game, µs per frame | 12,339 ± 117 | 12,347 ± 117 (+8 ± 57) |
+| Memory traffic in the game, bytes per frame | 545,710 ± 6,549 | 545,155 ± 5,883 (−555 ± 3,530) |
+| CPU time in the game, µs per frame | 12,338 ± 132 | 12,316 ± 104 (−22 ± 74) |
 <!-- /gen:summary-table -->
 
 In-game values: mean ± 95 % confidence interval. In brackets: difference from Silas.
@@ -209,10 +209,19 @@ Experiments 3 and 4 use the same runs.
 | Emulator | ares v148 |
 | Input | The seven attract-mode demos of SM64: 4,304 measured frames, with approximately 456 sine and cosine calls per frame |
 | Builds | Two for each kernel. **`sincoss()`:** [`bench/hsm64-sincos.patch`](bench/hsm64-sincos.patch) changes 13 functions to get the sine and the cosine of one angle from one `trig_sincos` call. These 13 functions make 98 % of the sine and cosine pairs. **Separate calls:** the game calls `sins()` and `coss()`, and each is one `trig_sin` call. |
-| Code shifts | Each build is made 16 times, with 0 to 15 KB of padding before the kernel, in 1 KB steps |
-| Result | The mean of the 16 code shifts ± the 95 % confidence interval (Student's t). In brackets: the difference from Silas at the same code shift, with its own confidence interval. |
+| Test conditions | 12 samples. Each sample is one random draw of the four conditions below ([`bench/sample.py`](bench/sample.py)). All builds of a sample use the same draw. |
+| Result | The mean of the 12 samples ± the 95 % confidence interval (Student's t). In brackets: the difference from Silas in the same sample, with its own confidence interval. |
 
-**Why code shifts:** The VR4300 instruction cache is 16 KB. Two functions that are 16 KB apart in memory use the same cache lines and remove each other from the cache. If code moves, different functions collide, and the result changes by chance, by up to approximately ±3 %. The code shifts cover one full period of the cache in equal steps.
+**Test conditions:** The position of code and data in memory decides which of them collide in the caches. These collisions change each result by chance, by up to approximately ±3 %. Each sample draws the positions and the game state at random, from the full period of each cache:
+
+| Condition | Draw | Effect |
+|---|---|---|
+| Code shift | 0 to 16 KB of padding before the kernel, in 32-byte steps | Instruction-cache collisions (16 KB cache, 32-byte lines) |
+| Data shift | 0 to 8 KB of `.bss` padding, in 16-byte steps | Data-cache collisions of the static data (8 KB cache, 16-byte lines) |
+| Heap shift | 0 to 8 KB added to the start of the main pool, in 16-byte steps | Data-cache collisions of all data that the game allocates at run time |
+| Game seed | 0 to 65,113 steps of the random generator of the game, at boot | The random choices of the objects. The path of Mario stays the same: the demos give the same input. |
+
+All four conditions are uniform and independent. Each sample has its own random generator, so the samples are independent.
 <!-- /gen:method -->
 
 ## 3. Memory traffic in the game
@@ -222,13 +231,13 @@ Bytes per frame that cache misses move over the RDRAM bus. ares counts the misse
 <!-- gen:traffic -->
 | | `sincoss()` at the 13 changed call sites | Separate `sins()` and `coss()` calls |
 |---|---|---|
-| Silas | 543,894 ± 7,050 | 552,340 ± 7,601 |
-| S5C6 one cache line | 544,745 ± 6,360 (+851 ± 3,289) | 552,781 ± 8,785 (+441 ± 3,324) |
-| S5C6 pure code | 544,672 ± 6,580 (+778 ± 3,722) | 554,160 ± 9,312 (+1,820 ± 3,638) |
-| S5C6 quantized | 545,323 ± 6,884 (+1,429 ± 3,684) | 554,170 ± 9,345 (+1,830 ± 3,642) |
+| Silas | 545,710 ± 6,549 | 552,604 ± 8,953 |
+| S5C6 one cache line | 545,155 ± 5,883 (−555 ± 3,530) | 554,518 ± 9,188 (+1,914 ± 4,027) |
+| S5C6 pure code | 545,970 ± 6,432 (+259 ± 3,908) | 555,670 ± 9,031 (+3,066 ± 4,254) |
+| S5C6 quantized | 546,429 ± 6,056 (+719 ± 2,946) | 555,455 ± 9,171 (+2,851 ± 4,429) |
 
 - **Criterion 1:** S5C6 and Silas have the same memory traffic. Each difference interval contains 0.
-- Each difference interval is 0.7 % of the total traffic or less.
+- Each difference interval is 0.8 % of the total traffic or less.
 - Neither kernel reads a table. The kernels differ only in code size: 32 to 80 bytes when the code is not in the cache.
 <!-- /gen:traffic -->
 
@@ -239,10 +248,10 @@ Game-thread CPU time from the HackerSM64 profiler, in µs per frame. Audio is no
 <!-- gen:cputime -->
 | | `sincoss()` at the 13 changed call sites | Separate `sins()` and `coss()` calls |
 |---|---|---|
-| Silas | 12,339 ± 117 | 12,596 ± 141 |
-| S5C6 one cache line | 12,347 ± 117 (+8 ± 57) | 12,543 ± 164 (−52 ± 80) |
-| S5C6 pure code | 12,352 ± 116 (+13 ± 61) | 12,571 ± 183 (−25 ± 93) |
-| S5C6 quantized | 12,354 ± 127 (+15 ± 70) | 12,560 ± 183 (−36 ± 93) |
+| Silas | 12,338 ± 132 | 12,564 ± 178 |
+| S5C6 one cache line | 12,316 ± 104 (−22 ± 74) | 12,537 ± 181 (−27 ± 85) |
+| S5C6 pure code | 12,332 ± 114 (−7 ± 76) | 12,565 ± 186 (+1 ± 101) |
+| S5C6 quantized | 12,331 ± 112 (−8 ± 60) | 12,555 ± 186 (−8 ± 100) |
 
 - **Criterion 2:** S5C6 and Silas have the same CPU time in the game. Each difference interval contains 0.
 <!-- /gen:cputime -->
