@@ -1,6 +1,9 @@
 # N64-trig: S5C6 sine and cosine for the N64
 
-**AI use:** I am a mathematician. I designed the approximation: the polynomial forms, the fit, the 8-bit coefficients c and f, and the constants in one cache line. I directed the work. Claude (the AI from Anthropic) wrote the code, the assembly, the benchmark and the report. The project contains no art, models or music.
+> [!NOTE]
+> - **AI use:** I am a mathematician. I designed the approximation: the polynomial forms, the fit, the 8-bit coefficients c and f, and the constants in one cache line. I directed the work. Claude (the AI from Anthropic) wrote the code, the assembly, the benchmark and the report. The project contains no art, models or music.
+> - **Source of the figures:** This documentation is generated from the experiment logs. All figures come from the benchmark results in [`bench/results/`](bench/results/) and from the scripts in [`fit/`](fit/) and [`bench/`](bench/). Refer to [Reproduce](#reproduce).
+> - **Style guide:** This documentation uses ASD-STE100 Simplified Technical English.
 
 S5C6 is a sine and cosine kernel for the N64 CPU (VR4300). It uses a folded polynomial. Its maximum error is 13 times smaller than the maximum error of the kernel from Silas Lock.
 
@@ -35,16 +38,31 @@ Three design decisions make S5C6 fast:
 
 ## Summary
 
-This table compares S5C6 (the one-cache-line version) with Silas and with the SM64 vanilla table.
+### Speed
+
+Game-thread CPU time in µs per frame. Benchmark: the seven attract-mode demos of SM64 (4,304 frames) on HackerSM64, in ares v148. Each value is the mean of three code layouts. The value in brackets is the difference from the SM64 vanilla table. A negative difference is faster than the table. Refer to [In the game](#in-the-game) for the method.
+
+| | `sincoss()` at the 13 changed call sites | Call sites unchanged (separate `sins()` and `coss()` calls) |
+|---|---|---|
+| SM64 vanilla table | 12,291 | 12,290 |
+| Silas | 12,282 (−9) | 12,365 (+75) |
+| S5C6 one cache line | 12,220 (−71) | 12,367 (+77) |
+| S5C6 pure code | 12,216 (−75) | 12,382 (+92) |
+| S5C6 quantized | **12,209 (−83)** | 12,371 (+81) |
+
+### Accuracy
+
+S5C6 (one cache line and pure code) compared with Silas and with the SM64 vanilla table:
 
 | | SM64 vanilla table | Silas | S5C6 |
 |---|---|---|---|
 | Max error | 1.4e-3 | 1.9e-4 | **1.45e-5** |
 | Max \|s² + c² − 1\| | 7.6e-8 | **7.1e-8** | 1.7e-7 |
-| Game time per frame with `sincoss()`, compared with the table, SM64 demos | 0 | −9 µs | **−71 µs** |
 
-- **In the game, S5C6 is faster than the table.** With `sincoss()` at the 13 changed call sites, it saves approximately 71 µs per frame. All three S5C6 versions are faster than the table (71 to 83 µs per frame). With the call sites of the game unchanged (separate `sins()` and `coss()` calls), the table is faster. Refer to [In the game](#in-the-game).
-- In the game, S5C6 saves approximately 62 µs per frame, compared with Silas.
+### Results
+
+- **With `sincoss()`, all S5C6 versions are faster than the table.** They save 71 to 83 µs per frame. With the call sites of the game unchanged, the table is faster than all kernels, Silas included.
+- With `sincoss()`, S5C6 saves 62 to 73 µs per frame, compared with Silas.
 - The maximum error of S5C6 is 13 times smaller than the maximum error of Silas. It is 100 times smaller than the maximum error of the table.
 - The sine and the cosine of Silas agree slightly better, because Silas calculates one value from the other. Both methods are within approximately 1.5 float32 rounding steps.
 - The position of the code in memory changes all in-game results by approximately ±3 %. Thus, the in-game results are the mean of three layouts. Refer to [In the game](#in-the-game).
@@ -229,7 +247,7 @@ python3 fit/fit_quantized.py [--table]               # quantized coefficients
 python3 bench/footprint.py --binutils DIR --clang DIR [--elf-dir work/HackerSM64-sincos]
 python3 bench/build.py --baserom sm64.us.z64 --clang BIN --binutils BIN [--pad N] [--variants kernels sincos] [--cycles] [--hardware]
 python3 bench/run.py [--variants kernels sincos] [--suffix=-padN | --suffix=-cyc]
-python3 bench/summary.py                             # the speed tables, from bench/results/
+python3 bench/summary.py                             # the speed tables (headline first), from bench/results/
 ```
 
 - `bench/hsm64-bench.patch` adds the benchmark to HackerSM64.

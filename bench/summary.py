@@ -54,6 +54,20 @@ def main():
     data = {L: load(L) for L in LAYOUTS}
     head = '| | layout 0 | layout 1024 | layout 4096 | mean |\n|---|---|---|---|---|'
 
+    def mean_us(build, L_get):
+        return sum(per_frame(L_get(L)[build])['us'] for L in LAYOUTS) / len(LAYOUTS)
+    van = json.loads((RES / 'vanilla.json').read_text())
+    t_sc = mean_us('vanilla-sc', lambda L: data[L])
+    t_sep = sum(per_frame(van[f'vanilla-pad{L}'])['us'] for L in LAYOUTS) / len(LAYOUTS)
+    print('Headline: game-thread µs per frame, SM64 demos, mean of the 3 layouts '
+          '(in brackets: difference from the table):\n')
+    print('| | `sincoss()` at the 13 changed call sites | Call sites unchanged (`sins()`, `coss()`) |\n|---|---|---|')
+    print(f'| SM64 vanilla table | {t_sc:,.0f} | {t_sep:,.0f} |')
+    for label, _, c, sc in KERNELS:
+        a_, b_ = mean_us(sc, lambda L: data[L]), mean_us(c, lambda L: data[L])
+        print(f'| {label} | {a_:,.0f} ({a_ - t_sc:+.0f}) | {b_:,.0f} ({b_ - t_sep:+.0f}) |')
+    print()
+
     print('Table lookups, game-thread µs/frame (the baseline):\n')
     print(head)
     vanilla = json.loads((RES / 'vanilla.json').read_text())
