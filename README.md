@@ -41,12 +41,12 @@ This table compares S5C6 (the one-cache-line version) with Silas and with the SM
 |---|---|---|---|
 | Max error | 1.4e-3 | 1.9e-4 | **1.45e-5** |
 | Max \|s² + c² − 1\| | 7.6e-8 | **7.1e-8** | 1.7e-7 |
-| CPU cycles for one sine and one cosine, warm cache, random angles | 51 | 93 | **89.5** |
-| Game time per frame, compared with the table, SM64 demos | 0 | −9 µs | **−71 µs** |
+| Game time per frame with `sincoss()`, compared with the table, SM64 demos | 0 | −9 µs | **−71 µs** |
 
+- **In the game, S5C6 is faster than the table.** With `sincoss()` at the 13 changed call sites, it saves approximately 71 µs per frame. All three S5C6 versions are faster than the table (71 to 83 µs per frame). With the call sites of the game unchanged (separate `sins()` and `coss()` calls), the table is faster. Refer to [In the game](#in-the-game).
+- In the game, S5C6 saves approximately 62 µs per frame, compared with Silas.
 - The maximum error of S5C6 is 13 times smaller than the maximum error of Silas. It is 100 times smaller than the maximum error of the table.
 - The sine and the cosine of Silas agree slightly better, because Silas calculates one value from the other. Both methods are within approximately 1.5 float32 rounding steps.
-- In the game, S5C6 saves approximately 62 µs per frame, compared with Silas.
 - The position of the code in memory changes all in-game results by approximately ±3 %. Thus, the in-game results are the mean of three layouts. Refer to [In the game](#in-the-game).
 - All measurements come from the ares emulator. **The kernels are not tested on a real N64.**
 
@@ -161,15 +161,17 @@ A timer in the ROM measures 65,536 calls in [ares](https://ares-emu.net) v148:
 - "In order" means the angles 0, 1, 2, …. "Random" means a pseudo-random angle for each call.
 - The unit is CPU cycles (93.75 MHz).
 
+**This measurement compares the kernels with each other. It cannot compare the table with a kernel.** In this loop, the lookups are the only work, so the table has the caches for itself. In a game, the 20 KB table removes game data from the 8 KB data cache, and each inline lookup adds code to the instruction cache. The game pays these costs later, outside the lookup, so this loop does not see them. The in-game measurement includes them: there, with `sincoss()`, all S5C6 versions are faster than the table. Refer to [In the game](#in-the-game).
+
 | | sin, in order | sin, random | sin + cos as two calls, random | sincos, random |
 |---|---|---|---|---|
-| SM64 vanilla table (inline) | 5.5 | 24.5 | 50.9 | 50.9 (two lookups) |
 | Silas | 65.5 | 65.5 | 132.0 | 93.0 |
 | S5C6 one cache line | 54.5 | 54.5 | 110.0 | 89.5 |
 | S5C6 pure code | 54.5 | 54.5 | 110.0 | 91.5 |
 | S5C6 quantized | 53.0 | 53.0 | 107.0 | 88.5 |
+| *SM64 vanilla table (inline lookup, not comparable)* | *5.5* | *24.5* | *50.9* | *50.9 (two lookups)* |
 
-- **The table is fast only while its lines are in the cache.** With angles in order, adjacent angles use the same cache line. With random angles, most lookups miss the 8 KB data cache. ares charges 40 cycles for each miss. The kernels have the same cost with angles in order and with random angles.
+- **The cost of a table lookup depends on the cache.** With angles in order, adjacent angles use the same cache line. With random angles, most lookups miss the data cache. ares charges 40 cycles for each miss. The kernels have the same cost with angles in order and with random angles.
 - **One `trig_sincos` call saves 18–39 cycles**, compared with two calls.
 - **Not in this table:** the cost of a call when its code or its constant line is not in the cache. The in-game results include this cost.
 - **Use these values only to compare methods.** ares uses fixed costs for each instruction and does not simulate the pipeline.
