@@ -37,6 +37,12 @@ float sqrtf(float value);
 const char gTrigPad[TRIG_PAD] __attribute__((section(".text.trig_pad"), used)) = { 0 };
 #endif
 
+/* Layout control: TRIG_DPAD bytes of .bss, moving the static data linked
+ * after this file (bench/sample.py). */
+#if defined(__GNUC__) && defined(TRIG_DPAD) && TRIG_DPAD > 0
+char gTrigDataPad[TRIG_DPAD] __attribute__((used, aligned(16)));
+#endif
+
 #if TRIG_FUNC != 0
 
 #if TRIG_COUNT

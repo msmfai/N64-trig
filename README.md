@@ -9,6 +9,7 @@ S5C6 is a sine and cosine kernel for the N64 CPU (VR4300). This repository compa
 
 ## Summary
 
+<!-- gen:summary-table -->
 | | Silas | S5C6 (one cache line) |
 |---|---|---|
 | Max error | 1.92e-4 | **1.45e-5** (13 times smaller) |
@@ -16,13 +17,16 @@ S5C6 is a sine and cosine kernel for the N64 CPU (VR4300). This repository compa
 | CPU cycles for one sine (exact) | 65.5 | **54.5** |
 | Memory traffic in the game, bytes per frame | 543,894 ± 7,050 | 544,745 ± 6,360 (+851 ± 3,289) |
 | CPU time in the game, µs per frame | 12,339 ± 117 | 12,347 ± 117 (+8 ± 57) |
+<!-- /gen:summary-table -->
 
 In-game values: mean ± 95 % confidence interval. In brackets: difference from Silas.
 
 - S5C6 is 13 times more accurate than Silas.
 - For each call, S5C6 uses fewer CPU cycles than Silas.
+<!-- gen:summary-claim -->
 - In the game, S5C6 has the same memory traffic and the same CPU time as Silas.
 - Thus, S5C6 gives 13 times the accuracy for the same cost.
+<!-- /gen:summary-claim -->
 
 ## The question
 
@@ -54,7 +58,7 @@ Each experiment below measures one of the three criteria:
 | `trig_sincos` | A kernel function that returns the sine and the cosine of one angle. In C, `sincoss(angle, s, c)` calls it. |
 | s² + c² − 1 | A measure of how well a sine and a cosine agree. A rotation made from them changes lengths by approximately half of this value. |
 | Memory traffic | The bytes that cache misses move over the RDRAM bus. A data-cache miss reads 16 bytes. A write-back writes 16 bytes. An instruction-cache miss reads 32 bytes. |
-| Code shift | Padding of 0 to 15 KB before the kernel, in 1 KB steps. Refer to [Method in the game](#method-in-the-game). |
+| Sample | One random draw of the test conditions: the positions of code and data in memory, and the random seed of the game. Refer to [Method in the game](#method-in-the-game). |
 | ± | The 95 % confidence interval. If the interval of a difference contains 0, the two values are the same. |
 
 ## How S5C6 works
@@ -198,6 +202,7 @@ A timer in the ROM measures 65,536 calls in [ares](https://ares-emu.net) v148:
 
 Experiments 3 and 4 use the same runs.
 
+<!-- gen:method -->
 | Item | Value |
 |---|---|
 | Game | [HackerSM64](https://github.com/HackerN64/HackerSM64), commit 3be00d2f, clang 21, `-Os` |
@@ -207,12 +212,14 @@ Experiments 3 and 4 use the same runs.
 | Code shifts | Each build is made 16 times, with 0 to 15 KB of padding before the kernel, in 1 KB steps |
 | Result | The mean of the 16 code shifts ± the 95 % confidence interval (Student's t). In brackets: the difference from Silas at the same code shift, with its own confidence interval. |
 
-**Why code shifts:** The VR4300 instruction cache is 16 KB. Two functions that are 16 KB apart in memory use the same cache lines and remove each other from the cache. If code moves, different functions collide, and the result changes by chance, by up to approximately ±3 %. The 16 code shifts cover one full period of the cache in equal steps. Thus, the mean includes all positions of the code, and the confidence interval shows the remaining chance.
+**Why code shifts:** The VR4300 instruction cache is 16 KB. Two functions that are 16 KB apart in memory use the same cache lines and remove each other from the cache. If code moves, different functions collide, and the result changes by chance, by up to approximately ±3 %. The code shifts cover one full period of the cache in equal steps.
+<!-- /gen:method -->
 
 ## 3. Memory traffic in the game
 
 Bytes per frame that cache misses move over the RDRAM bus. ares counts the misses for the whole machine.
 
+<!-- gen:traffic -->
 | | `sincoss()` at the 13 changed call sites | Separate `sins()` and `coss()` calls |
 |---|---|---|
 | Silas | 543,894 ± 7,050 | 552,340 ± 7,601 |
@@ -220,13 +227,16 @@ Bytes per frame that cache misses move over the RDRAM bus. ares counts the misse
 | S5C6 pure code | 544,672 ± 6,580 (+778 ± 3,722) | 554,160 ± 9,312 (+1,820 ± 3,638) |
 | S5C6 quantized | 545,323 ± 6,884 (+1,429 ± 3,684) | 554,170 ± 9,345 (+1,830 ± 3,642) |
 
-- **Criterion 1:** S5C6 and Silas have the same memory traffic. Each difference interval contains 0 and is less than 0.7 % of the total traffic.
+- **Criterion 1:** S5C6 and Silas have the same memory traffic. Each difference interval contains 0.
+- Each difference interval is 0.7 % of the total traffic or less.
 - Neither kernel reads a table. The kernels differ only in code size: 32 to 80 bytes when the code is not in the cache.
+<!-- /gen:traffic -->
 
 ## 4. CPU time in the game
 
 Game-thread CPU time from the HackerSM64 profiler, in µs per frame. Audio is not included.
 
+<!-- gen:cputime -->
 | | `sincoss()` at the 13 changed call sites | Separate `sins()` and `coss()` calls |
 |---|---|---|
 | Silas | 12,339 ± 117 | 12,596 ± 141 |
@@ -235,6 +245,7 @@ Game-thread CPU time from the HackerSM64 profiler, in µs per frame. Audio is no
 | S5C6 quantized | 12,354 ± 127 (+15 ± 70) | 12,560 ± 183 (−36 ± 93) |
 
 - **Criterion 2:** S5C6 and Silas have the same CPU time in the game. Each difference interval contains 0.
+<!-- /gen:cputime -->
 
 ## Checks
 
@@ -256,11 +267,13 @@ python3 fit/fit_quantized.py [--table]               # quantized coefficients
 python3 bench/footprint.py --binutils DIR --clang DIR [--elf-dir work/HackerSM64-sincos]   # size
 python3 bench/build.py --baserom sm64.us.z64 --clang BIN --binutils BIN [--pad N] [--variants ...] [--cycles] [--hardware]
 python3 bench/run.py [--variants ...] [--suffix=-padN | --suffix=-cyc] --out FILE
+python3 bench/sample.py --baserom sm64.us.z64 --clang BIN --binutils BIN [--samples 64] [--seed 1]   # experiments 3 and 4
 python3 bench/summary.py                             # experiments 2 (cycles), 3 and 4, from bench/results/
+python3 bench/readme.py                              # writes the in-game tables of this README
 ```
 
 - `bench/hsm64-bench.patch` adds the benchmark to HackerSM64.
-- The builds for experiments 3 and 4 are `asilas`, `abfskl`, `abfsk` and `aone` (separate calls), and the same names with `-sc` (`sincoss()`). Build each one with `--pad 0` to `--pad 15360`, in steps of 1024.
+- `bench/sample.py` builds `asilas`, `abfskl`, `abfsk` and `aone` (separate calls), and the same names with `-sc` (`sincoss()`), for each sample.
 - A `--cycles` build adds the timer for experiment 2. These builds are separate, because the code of the timer moves the code after it.
 - ares is deterministic: a ROM gives the same counts in each run. Thus, results saved at different times can be combined. Control ROMs built again gave exactly the saved results.
 
