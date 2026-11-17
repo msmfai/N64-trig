@@ -1,8 +1,8 @@
 diff --git a/Makefile b/Makefile
-index e590b59b..7a5fedfa 100644
+index e590b59b..70a19640 100644
 --- a/Makefile
 +++ b/Makefile
-@@ -69,6 +69,32 @@ endif
+@@ -69,6 +69,35 @@ endif
  
  DEFINES += NO_ERRNO_H=1
  
@@ -25,11 +25,14 @@ index e590b59b..7a5fedfa 100644
 +# TRIG_CYCLES=1: at the end, also time each trig form per call with interrupts
 +# off (warm cache; ares only). Its own builds: the code it adds moves the layout.
 +TRIG_CYCLES ?= 0
++# TRIG_INLINE=1: with TRIG_SINCOS, sincoss() is the kernel as inline assembly
++# (src/engine/sincos_inline.h; TRIG_FUNC 5 or 8), no call.
++TRIG_INLINE ?= 0
 +# TRIG_PAD: bytes of padding placed in the code before trig_sin, a layout
 +# control that moves it and the code linked after it.
 +TRIG_PAD   ?= 0
 +ifeq ($(TRIG_BENCH),1)
-+  DEFINES += TRIG_BENCH=1 TRIG_HSM64=1 TRIG_FUNC=$(TRIG_FUNC) TRIG_USE=$(TRIG_USE) TRIG_QUANT=$(TRIG_QUANT) TRIG_COUNT=$(TRIG_COUNT) TRIG_PAD=$(TRIG_PAD) TRIG_SINCOS=$(TRIG_SINCOS) TRIG_SITES=$(TRIG_SITES) TRIG_EMUX=$(TRIG_EMUX) TRIG_CYCLES=$(TRIG_CYCLES)
++  DEFINES += TRIG_BENCH=1 TRIG_HSM64=1 TRIG_FUNC=$(TRIG_FUNC) TRIG_USE=$(TRIG_USE) TRIG_QUANT=$(TRIG_QUANT) TRIG_COUNT=$(TRIG_COUNT) TRIG_PAD=$(TRIG_PAD) TRIG_SINCOS=$(TRIG_SINCOS) TRIG_SITES=$(TRIG_SITES) TRIG_EMUX=$(TRIG_EMUX) TRIG_CYCLES=$(TRIG_CYCLES) TRIG_INLINE=$(TRIG_INLINE)
 +endif
 +
  # VERSION - selects the version of the game to build
@@ -53,10 +56,10 @@ index 42b0ef9b..68fa6650 100644
 +#undef DISABLE_DEMO
 +#endif
 diff --git a/src/engine/math_util.h b/src/engine/math_util.h
-index f53e65e4..1d2368c5 100644
+index f53e65e4..d295c9d2 100644
 --- a/src/engine/math_util.h
 +++ b/src/engine/math_util.h
-@@ -38,10 +38,89 @@ extern Vec3s gVec3sOne;
+@@ -38,10 +38,98 @@ extern Vec3s gVec3sOne;
  extern f32 gSineTable[];
  #define gCosineTable (gSineTable + 0x400)
  
@@ -70,6 +73,7 @@ index f53e65e4..1d2368c5 100644
 + *   TRIG_QUANT 1: a call cuts its angle to the table's 4096 steps
 + *   TRIG_COUNT counts the calls (not for timing)
 + *   TRIG_SINCOS 1: sincoss() is one trig_sincos call (call builds only)
++ *   TRIG_INLINE 1: with TRIG_SINCOS, sincoss() is the kernel inline (no call)
 + *   TRIG_SITES reports calls per call site (not for timing)
 + *
 + * With TRIG_FUNC != 0 and TRIG_USE 0 the table is refilled at boot from
@@ -136,8 +140,16 @@ index f53e65e4..1d2368c5 100644
 +#else
 +#define TRIG_SC_ARG(x) ((u16) (x))
 +#endif
++#if TRIG_INLINE
++/* The kernel inline at each sincoss() site: no call (src/engine/sincos_inline.h). */
++#define SINCOS_INLINE_QUANTIZED (TRIG_FUNC == 8)
++#include "sincos_inline.h"
++#define sincoss(x, s, c) do { f32 _is, _ic; sincos_inline(TRIG_SC_ARG(x), &_is, &_ic); \
++    (s) = _is; (c) = _ic; } while (0)
++#else
 +#define sincoss(x, s, c) do { _Complex float _sc = trig_sincos(TRIG_SC_ARG(x)); \
 +    (s) = __real__ _sc; (c) = __imag__ _sc; } while (0)
++#endif
 +#define tans(x) ({ f32 _ts, _tc; sincoss((x), _ts, _tc); _ts / _tc; })
 +#define cots(x) ({ f32 _ts, _tc; sincoss((x), _ts, _tc); _tc / _ts; })
 +#else

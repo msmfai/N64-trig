@@ -7,10 +7,8 @@ Each method is evaluated in float32, operation by operation as its code does
 it (kernel/*.s, bench/trig_kernels.s), so the figures are what the N64
 returns. Reference: sin and cos of angle * 2*pi/65536 in float64.
 
-SM64's sine table is float32(sin(i * 2*pi/4096)) for i = 0..5119 with exact
-zeros at the half turns (checked entry for entry against the decompilation's
-gSineTable); it is regenerated here, not copied. sins(a) reads entry a >> 4,
-coss(a) entry (a >> 4) + 1024.
+The baseline is Silas Lock's kernel. SM64's sine table is not compared here
+(see the README).
 """
 import argparse
 import math
@@ -24,14 +22,6 @@ REF_C = np.cos(U * (2 * math.pi / 65536))
 
 def f32(bits):
     return np.array([bits], dtype=np.uint32).view(F)[0]
-
-
-def table():
-    i = np.arange(5120)
-    t = np.sin(i * (2 * math.pi / 4096))
-    t[np.abs(t) < 1e-12] = 0.0
-    t = t.astype(F)
-    return lambda a: t[(a & 0xFFFF) >> 4], lambda a: t[((a & 0xFFFF) >> 4) + 1024]
 
 
 def silas():
@@ -72,7 +62,6 @@ BFSK = (0x38c90dd0, 0xaa24fee4, 0x1a970000, 0xb19de6b5, 0x2280c3c2, 0x925d0000)
 ONE = (0x38c90f98, 0xaa250000, 0x1a940000, 0xb19e0000, 0x22860000, 0x932d0000)
 
 METHODS = [
-    ('SM64 vanilla table', table()),
     ('Silas', silas()),
     ('S5C6 one cache line / pure code', s5c6(BFSK)),
     ('S5C6 quantized', s5c6(ONE)),
@@ -105,6 +94,7 @@ def measure(sin, cos):
                                                 == [1, 0, -1, 0]),
         'sin(−a) = −sin(a), cos(−a) = cos(a), exactly': bool(np.all(s[neg] == -s) and np.all(c[neg] == c)),
         'sine never decreases from 0° to 90°': bool(np.all(np.diff(sq) >= 0)),
+        '|sin| and |cos| never above 1': bool(np.all(np.abs(s) <= 1) and np.all(np.abs(c) <= 1)),
         'distinct sine values per turn': len(np.unique(s)),
     }
 

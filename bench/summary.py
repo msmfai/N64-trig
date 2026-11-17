@@ -1,127 +1,161 @@
 #!/usr/bin/env python3
-"""The README's speed tables, from the saved results in bench/results/.
+"""The README's in-game and per-call tables, from the saved results in bench/results/.
 
   python3 bench/summary.py
 
+The baseline is Silas Lock's kernel. Every in-game figure is S5C6 minus
+Silas, built from the same source at the same code shift.
+
 Every figure comes from bench/run.py output files (ares v148, HackerSM64
-3be00d2f, clang 21). ares is deterministic: a ROM gives the same cycles on
-every run, so results saved in different sessions combine (checked: the
-cache-line and table builds rerun later matched the saved files exactly).
+3be00d2f, clang 21). ares is deterministic: a ROM gives the same counts on
+every run, so results saved in different sessions combine (checked: rebuilt
+ROMs matched the saved files exactly).
+
+Code shifts: each build is made with 0 to 15 KB of padding before the kernel
+(bench/build.py --pad), in 1 KB steps: one full period of the 16 KB
+instruction cache. Moving code changes which functions collide in the cache,
+which changes a result by chance. For each code shift, the script takes the
+difference between S5C6 and Silas at that shift. A figure is the mean of
+these differences with its 95 % confidence interval (Student's t). If the
+interval contains 0, the difference cannot be told apart from code-position
+chance.
+
+Memory traffic: the bytes that cache misses move over the RDRAM bus. A
+data-cache miss reads one 16-byte line, a write-back writes one 16-byte line,
+an instruction-cache miss reads one 32-byte line (VR4300). The counts are
+ares's counters for the whole machine.
 """
 import json
+import math
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 RES = HERE / 'results'
 CPU_HZ = 93.75e6
-LAYOUTS = (0, 1024, 4096)
-# label: (table build, call build, sincos build)
+OLD_SHIFTS = (0, 1024, 4096)                   # results/{kernels,sincos,one}-padN.json
+BASE = ('Silas', 'asilas', 'asilas-sc')
+# label: (separate-calls build, sincos build)
 KERNELS = [
-    ('Silas', 'tasilas', 'asilas', 'asilas-sc'),
-    ('S5C6 one cache line', 'tabfskl', 'abfskl', 'abfskl-sc'),
-    ('S5C6 pure code', 'tabfsk', 'abfsk', 'abfsk-sc'),
-    ('S5C6 quantized', 'taone', 'aone', 'aone-sc'),
+    ('S5C6 one cache line', 'abfskl', 'abfskl-sc'),
+    ('S5C6 pure code', 'abfsk', 'abfsk-sc'),
+    ('S5C6 quantized', 'aone', 'aone-sc'),
 ]
+BUILDS = [b for k in [BASE] + KERNELS for b in k[1:]]
+LINE = {'d': 16, 'w': 16, 'i': 32}             # bytes per data miss, write-back, instruction miss
+
+# Student t, 0.975 quantile, by degrees of freedom
+T975 = {1: 12.71, 2: 4.303, 3: 3.182, 4: 2.776, 5: 2.571, 6: 2.447, 7: 2.365, 8: 2.306, 9: 2.262, 10: 2.228,
+        11: 2.201, 12: 2.179, 13: 2.160, 14: 2.145, 15: 2.131, 16: 2.120, 18: 2.101, 20: 2.086, 25: 2.060,
+        30: 2.042}
 
 
-def load(layout):
+def load_all():
+    """{shift: {build: result}}"""
     out = {}
-    for name in (f'kernels-pad{layout}.json', f'sincos-pad{layout}.json', f'one-pad{layout}.json'):
-        p = RES / name
-        if p.exists():
-            out.update({k: v for k, v in json.loads(p.read_text()).items() if v})
+    for s in OLD_SHIFTS:
+        d = {}
+        for name in (f'kernels-pad{s}.json', f'sincos-pad{s}.json', f'one-pad{s}.json'):
+            p = RES / name
+            if p.exists():
+                d.update({k: v for k, v in json.loads(p.read_text()).items() if v})
+        out[s] = d
+    for p in sorted((RES / 'shifts').glob('pad*.json')):
+        s = int(p.stem[3:])
+        out.setdefault(s, {}).update({k: v for k, v in json.loads(p.read_text()).items() if v})
     return out
 
 
 def per_frame(r):
     d = r['demos']
     f = sum(x['frames'] for x in d)
-    return {'us': sum(x['cycles'] - x['preempted'] for x in d) / f / CPU_HZ * 1e6,
-            'd': sum(x['d_misses'] for x in d) / f, 'w': sum(x['d_writes'] for x in d) / f,
-            'i': sum(x['i_misses'] for x in d) / f}
+    m = {'us': sum(x['cycles'] - x['preempted'] for x in d) / f / CPU_HZ * 1e6,
+         'd': sum(x['d_misses'] for x in d) / f, 'w': sum(x['d_writes'] for x in d) / f,
+         'i': sum(x['i_misses'] for x in d) / f}
+    m['bytes'] = sum(LINE[k] * m[k] for k in LINE)
+    m['dbytes'] = LINE['d'] * m['d'] + LINE['w'] * m['w']
+    m['ibytes'] = LINE['i'] * m['i']
+    return m
 
 
-def same_game(a, b):
-    return [(x['hash'], x['frames']) for x in a['demos']] == [(x['hash'], x['frames']) for x in b['demos']]
+def mean_ci(v):
+    """Mean and the half-width of its 95 % t interval."""
+    n = len(v)
+    m = sum(v) / n
+    if n < 2:
+        return m, float('nan')
+    sd = math.sqrt(sum((x - m) ** 2 for x in v) / (n - 1))
+    return m, T975.get(n - 1, 2.0) * sd / math.sqrt(n)
 
 
-def row(label, vals, fmt='{:+.0f}'):
-    mean = sum(vals) / len(vals)
-    return f'| {label} | ' + ' | '.join(fmt.format(v) for v in vals) + f' | **{fmt.format(mean)}** |'
+def sign(x):
+    return f'{x:+,.0f}'.replace('-', '−')
+
+
+def fmt(m, h):
+    return f'{sign(m)} ± {h:,.0f}'
+
+
+def diffs(data, shifts, build, base, key):
+    return [per_frame(data[s][build])[key] - per_frame(data[s][base])[key] for s in shifts]
 
 
 def main():
-    data = {L: load(L) for L in LAYOUTS}
-    head = '| | code not moved | code moved 1 KB | code moved 4 KB | mean |\n|---|---|---|---|---|'
+    data = load_all()
+    shifts = sorted(s for s, d in data.items() if all(b in d for b in BUILDS))
+    n = len(shifts)
+    print(f'{n} code shifts. Every value: S5C6 minus Silas, mean over the code shifts ± 95 % confidence '
+          'interval. Negative is less than Silas.\n')
 
-    def mean_us(build, L_get):
-        return sum(per_frame(L_get(L)[build])['us'] for L in LAYOUTS) / len(LAYOUTS)
-    van = json.loads((RES / 'vanilla.json').read_text())
-    t_sc = mean_us('vanilla-sc', lambda L: data[L])
-    t_sep = sum(per_frame(van[f'vanilla-pad{L}'])['us'] for L in LAYOUTS) / len(LAYOUTS)
-    print('Headline: game-thread µs per frame, SM64 demos, mean of the 3 code shifts '
-          '(in brackets: difference from the table):\n')
-    print('| | `sincoss()` at the 13 changed call sites | Call sites unchanged (`sins()`, `coss()`) |\n|---|---|---|')
-    print(f'| SM64 vanilla table | {t_sc:,.0f} | {t_sep:,.0f} |')
-    for label, _, c, sc in KERNELS:
-        a_, b_ = mean_us(sc, lambda L: data[L]), mean_us(c, lambda L: data[L])
-        print(f'| {label} | {a_:,.0f} ({a_ - t_sc:+.0f}) | {b_:,.0f} ({b_ - t_sep:+.0f}) |')
-    print()
+    print('Memory traffic, bytes per frame moved over the RDRAM bus by cache misses:\n')
+    print('| | `sincoss()` at the 13 changed call sites | Separate `sins()` and `coss()` calls |\n|---|---|---|')
+    for label, c, sc in KERNELS:
+        print(f'| {label} | {fmt(*mean_ci(diffs(data, shifts, sc, BASE[2], "bytes")))} | '
+              f'{fmt(*mean_ci(diffs(data, shifts, c, BASE[1], "bytes")))} |')
+    base_sc = mean_ci([per_frame(data[s][BASE[2]])['bytes'] for s in shifts])
+    base_c = mean_ci([per_frame(data[s][BASE[1]])['bytes'] for s in shifts])
+    print(f'| Silas, total (not a difference) | {base_sc[0]:,.0f} ± {base_sc[1]:,.0f} | '
+          f'{base_c[0]:,.0f} ± {base_c[1]:,.0f} |')
 
-    print('Table lookups, game-thread µs/frame (the baseline):\n')
-    print(head)
-    vanilla = json.loads((RES / 'vanilla.json').read_text())
-    print(row('vanilla table, unmodified call sites', [per_frame(vanilla[f'vanilla-pad{L}'])['us'] for L in LAYOUTS],
-              '{:,.0f}'))
-    print(row('vanilla table, sincos call-site build', [per_frame(data[L]['vanilla-sc'])['us'] for L in LAYOUTS],
-              '{:,.0f}'))
+    print('\nThe same, by kind of transfer (`sincoss()` builds), bytes per frame:\n')
+    print('| | data (misses + write-backs) | instructions |\n|---|---|---|')
+    for label, c, sc in KERNELS:
+        print(f'| {label} | {fmt(*mean_ci(diffs(data, shifts, sc, BASE[2], "dbytes")))} | '
+              f'{fmt(*mean_ci(diffs(data, shifts, sc, BASE[2], "ibytes")))} |')
 
-    print('\nSeparate sins()/coss() calls, µs/frame against the vanilla table:\n')
-    print(head)
-    for label, t, c, _ in KERNELS:
-        print(row(label, [per_frame(data[L][c])['us'] - per_frame(vanilla[f'vanilla-pad{L}'])['us'] for L in LAYOUTS]))
+    print('\nGame-thread CPU time, µs per frame:\n')
+    print('| | `sincoss()` at the 13 changed call sites | Separate `sins()` and `coss()` calls |\n|---|---|---|')
+    for label, c, sc in KERNELS:
+        print(f'| {label} | {fmt(*mean_ci(diffs(data, shifts, sc, BASE[2], "us")))} | '
+              f'{fmt(*mean_ci(diffs(data, shifts, c, BASE[1], "us")))} |')
+    base_sc = mean_ci([per_frame(data[s][BASE[2]])['us'] for s in shifts])
+    base_c = mean_ci([per_frame(data[s][BASE[1]])['us'] for s in shifts])
+    print(f'| Silas, total (not a difference) | {base_sc[0]:,.0f} ± {base_sc[1]:,.0f} | '
+          f'{base_c[0]:,.0f} ± {base_c[1]:,.0f} |')
 
-    print('\nSeparate calls against a table refilled with the same values (bit-identical game, checked):\n')
-    print(head)
-    for label, t, c, _ in KERNELS:
-        vals = []
-        for L in LAYOUTS:
-            assert same_game(data[L][t], data[L][c]), (label, L)
-            vals.append(per_frame(data[L][c])['us'] - per_frame(data[L][t])['us'])
-        print(row(label, vals))
-
-    print('\nsincoss() at the 13 converted call sites, µs/frame against the vanilla table (same source):\n')
-    print(head)
-    for label, _, _, sc in KERNELS:
-        print(row(label, [per_frame(data[L][sc])['us'] - per_frame(data[L]['vanilla-sc'])['us'] for L in LAYOUTS]))
-
-    print('\nsincoss(): µs/frame saved against Silas:\n')
-    print(head)
-    for label, _, _, sc in KERNELS[1:]:
-        print(row(label, [per_frame(data[L]['asilas-sc'])['us'] - per_frame(data[L][sc])['us'] for L in LAYOUTS]))
-
-    print('\nsincoss(): cache misses per frame against the vanilla table, mean of the 3 code shifts '
-          '(whole machine; ares charges 40 cycles per data-cache miss or write-back, 48 per instruction-cache miss):\n')
-    print('| | data-cache misses | write-backs | instruction-cache misses |\n|---|---|---|---|')
-    for label, _, _, sc in KERNELS:
-        d = {k: sum(per_frame(data[L][sc])[k] - per_frame(data[L]['vanilla-sc'])[k] for L in LAYOUTS) / 3
-             for k in ('d', 'w', 'i')}
-        print(f"| {label} | {d['d']:+.0f} | {d['w']:+.0f} | {d['i']:+.0f} |")
+    inl = [p for p in sorted(RES.glob('inline-pad*.json'))]
+    if inl:
+        res = {int(p.stem[len('inline-pad'):]): json.loads(p.read_text()) for p in inl}
+        print(f'\nInline kernel at the sincoss() sites ({len(res)} code shifts), inline build minus call build, '
+              'µs per frame:\n')
+        print('| | CPU time | memory traffic (bytes per frame) |\n|---|---|---|')
+        for label, inline, call in (('S5C6 pure code', 'abfsk-sci', 'abfsk-sc'),
+                                    ('S5C6 quantized', 'aone-sci', 'aone-sc')):
+            us = [per_frame(res[s][inline])['us'] - per_frame(data[s][call])['us'] for s in res]
+            by = [per_frame(res[s][inline])['bytes'] - per_frame(data[s][call])['bytes'] for s in res]
+            print(f'| {label} | {fmt(*mean_ci(us))} | {fmt(*mean_ci(by))} |')
 
     cyc = RES / 'cycles.json'
     if cyc.exists():
         c = json.loads(cyc.read_text())
         print('\nCPU cycles per call, warm cache, interrupts off (ares), loop overhead subtracted. '
-              'In order: angles 0, 1, 2, ...; random: a pseudo-random angle each call:\n')
+              'In order: angles 0, 1, 2, ...; random: a pseudo-random angle each call. Exact: ares is '
+              'deterministic and each loop covers all 65,536 calls, so these have no sampling error:\n')
         print('| | sin, in order | sin, random | sin + cos as two calls, random | sincos, random |\n|---|---|---|---|---|')
-        for label, v in [('SM64 vanilla table (inline)', 'vanilla-sc')] + [(k[0], k[3]) for k in KERNELS] \
-                + [('LUTX16', 'alutx-sc')]:
+        for label, v in [(BASE[0], BASE[2])] + [(k[0], k[2]) for k in KERNELS]:
             x = c.get(v, {}) and c[v].get('cycles')
-            if not x:
-                continue
-            sincos = x['random']['sincos'] if v != 'vanilla-sc' else x['random']['sin_cos_two_calls']
-            print(f"| {label} | {x['in_order']['sin']:.1f} | {x['random']['sin']:.1f} | "
-                  f"{x['random']['sin_cos_two_calls']:.1f} | {sincos:.1f} |")
+            if x:
+                print(f"| {label} | {x['in_order']['sin']:.1f} | {x['random']['sin']:.1f} | "
+                      f"{x['random']['sin_cos_two_calls']:.1f} | {x['random']['sincos']:.1f} |")
 
 
 if __name__ == '__main__':
