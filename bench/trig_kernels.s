@@ -5,6 +5,9 @@
 #   6  S5C6 with BFSK's coefficients, the two short ones and 1.0 built in code,
 #      the four long ones loaded from one 16-byte-aligned line (gTrigK)
 #   7  LUTX16: 16-segment table + quadratic (gTrigLutx16, 17 x 32 bytes)
+#   8  S5C6 "one constant": only S1 at full precision (lui + ori), the other
+#      five in 8 mantissa bits (one lui each); no data. Its own coefficients
+#      (fit/fit_one.py), less accurate than BFSK.
 #
 # float trig_sin(int angle): angle in $a0 (any value; only bits 0-15 matter),
 # result in $f0. With TRIG_SINCOS, also _Complex float trig_sincos(int angle):
@@ -66,7 +69,7 @@ trig_sin:
 2:  jr      $ra
     neg.s   $f0, $f0
 
-#elif TRIG_FUNC == 5 || TRIG_FUNC == 6
+#elif TRIG_FUNC == 5 || TRIG_FUNC == 6 || TRIG_FUNC == 8
 # S5C6 / BFSK: sin = x*(S1 + x2*(S3 + S5*x2)); cos = 1 + x2*(C2 + x2*(C4 + C6*x2)).
     addiu   $t0, $a0, 0x2000
     andi    $t1, $t0, 0x3fff
@@ -84,9 +87,20 @@ trig_sin:
     bnez    $t2, 1f
     andi    $t5, $t0, 0x8000         # negate (delay slot)
 # sine octants
+#if TRIG_FUNC == 8
+    lui     $t3, 0x1a94              # S5 = 0x1a940000
+    mtc1    $t3, $f4
+    lui     $t3, 0xaa25              # S3 = 0xaa250000
+    mtc1    $t3, $f6
+    lui     $t4, 0x38c9              # S1 = 0x38c90f98
+    ori     $t4, $t4, 0x0f98
+    mtc1    $t4, $f8
+#else
     lui     $t3, 0x1a97              # S5 = 0x1a970000
     mtc1    $t3, $f4
-#if TRIG_FUNC == 5
+#endif
+#if TRIG_FUNC == 8
+#elif TRIG_FUNC == 5
     lui     $t3, 0xaa24              # S3 = 0xaa24fee4
     ori     $t3, $t3, 0xfee4
     mtc1    $t3, $f6
@@ -107,9 +121,20 @@ trig_sin:
     jr      $ra
     nop
 # cosine octants
-1:  lui     $t3, 0x925d              # C6 = 0x925d0000
+1:
+#if TRIG_FUNC == 8
+    lui     $t3, 0x932d              # C6 = 0x932d0000
     mtc1    $t3, $f4
-#if TRIG_FUNC == 5
+    lui     $t3, 0x2286              # C4 = 0x22860000
+    mtc1    $t3, $f6
+    lui     $t4, 0xb19e              # C2 = 0xb19e0000
+    mtc1    $t4, $f8
+#else
+    lui     $t3, 0x925d              # C6 = 0x925d0000
+    mtc1    $t3, $f4
+#endif
+#if TRIG_FUNC == 8
+#elif TRIG_FUNC == 5
     lui     $t3, 0x2280              # C4 = 0x2280c3c2
     ori     $t3, $t3, 0xc3c2
     mtc1    $t3, $f6
@@ -252,7 +277,7 @@ trig_sincos:
 3:  jr      $ra
     nop
 
-#elif TRIG_FUNC == 5 || TRIG_FUNC == 6
+#elif TRIG_FUNC == 5 || TRIG_FUNC == 6 || TRIG_FUNC == 8
 # S5C6: S and C both; even octants sin = S, cos = C; odd sin = C, cos = -S;
 # both negate on bit 15 of t.
     addiu   $t0, $a0, 0x2000
@@ -262,16 +287,34 @@ trig_sincos:
 #if TRIG_FUNC == 6
     lui     $t7, %hi(gTrigK)
 #endif
+#if TRIG_FUNC == 8
+    lui     $t3, 0x1a94              # S5
+#else
     lui     $t3, 0x1a97              # S5
+#endif
     cvt.s.w $f0, $f0                 # x
 #if TRIG_FUNC == 6
     addiu   $t7, $t7, %lo(gTrigK)
 #endif
     mtc1    $t3, $f4
+#if TRIG_FUNC == 8
+    lui     $t3, 0x932d              # C6
+#else
     lui     $t3, 0x925d              # C6
+#endif
     mul.s   $f2, $f0, $f0            # x2
     mtc1    $t3, $f12
-#if TRIG_FUNC == 5
+#if TRIG_FUNC == 8
+    lui     $t3, 0xaa25              # S3
+    mtc1    $t3, $f6
+    lui     $t4, 0x2286              # C4
+    mtc1    $t4, $f14
+    lui     $t3, 0x38c9              # S1
+    ori     $t3, $t3, 0x0f98
+    mtc1    $t3, $f8
+    lui     $t4, 0xb19e              # C2
+    mtc1    $t4, $f16
+#elif TRIG_FUNC == 5
     lui     $t3, 0xaa24              # S3
     ori     $t3, $t3, 0xfee4
     mtc1    $t3, $f6

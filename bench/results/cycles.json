@@ -1,0 +1,92 @@
+{
+ "aone-sc": {
+  "cycles": {
+   "in_order": {
+    "sin": 53.0,
+    "sin_cos_two_calls": 107.0,
+    "sincos": 88.50003051757812
+   },
+   "random": {
+    "sin": 53.000091552734375,
+    "sin_cos_two_calls": 107.0,
+    "sincos": 88.50323486328125
+   }
+  },
+  "func": 8
+ },
+ "vanilla-sc": {
+  "cycles": {
+   "in_order": {
+    "sin": 5.498138427734375,
+    "sin_cos_two_calls": 7.763580322265625,
+    "sincos": 7.762969970703125
+   },
+   "random": {
+    "sin": 24.545257568359375,
+    "sin_cos_two_calls": 50.948822021484375,
+    "sincos": 50.944061279296875
+   }
+  },
+  "func": 0
+ },
+ "asilas-sc": {
+  "cycles": {
+   "in_order": {
+    "sin": 65.5,
+    "sin_cos_two_calls": 132.0,
+    "sincos": 93.00003051757812
+   },
+   "random": {
+    "sin": 65.49884033203125,
+    "sin_cos_two_calls": 132.0,
+    "sincos": 92.9986572265625
+   }
+  },
+  "func": 4
+ },
+ "abfskl-sc": {
+  "cycles": {
+   "in_order": {
+    "sin": 54.5,
+    "sin_cos_two_calls": 110.0,
+    "sincos": 89.50003051757812
+   },
+   "random": {
+    "sin": 54.5001220703125,
+    "sin_cos_two_calls": 110.0,
+    "sincos": 89.50323486328125
+   }
+  },
+  "func": 6
+ },
+ "abfsk-sc": {
+  "cycles": {
+   "in_order": {
+    "sin": 54.499969482421875,
+    "sin_cos_two_calls": 110.0,
+    "sincos": 91.49996948242188
+   },
+   "random": {
+    "sin": 54.500152587890625,
+    "sin_cos_two_calls": 110.0,
+    "sincos": 91.5032958984375
+   }
+  },
+  "func": 5
+ },
+ "alutx-sc": {
+  "cycles": {
+   "in_order": {
+    "sin": 59.5,
+    "sin_cos_two_calls": 120.0,
+    "sincos": 91.00003051757812
+   },
+   "random": {
+    "sin": 59.49993896484375,
+    "sin_cos_two_calls": 120.0,
+    "sincos": 90.99871826171875
+   }
+  },
+  "func": 7
+ }
+}
