@@ -15,8 +15,8 @@ S5C6 is a sine and cosine kernel for the N64 CPU (VR4300). This repository compa
 | Max error | 1.92e-4 | **1.45e-5** (13 times smaller) |
 | CPU cycles for one sine and one cosine (exact) | 93.0 | **89.5** |
 | CPU cycles for one sine (exact) | 65.5 | **54.5** |
-| Memory traffic in the game, bytes per frame | 545,710 ± 6,549 | 545,155 ± 5,883 (−555 ± 3,530) |
-| CPU time in the game, µs per frame | 12,338 ± 132 | 12,316 ± 104 (−22 ± 74) |
+| Memory traffic in the game, bytes per frame | 544,176 ± 5,406 | 543,674 ± 4,862 (−502 ± 2,767) |
+| CPU time in the game, µs per frame | 12,312 ± 109 | 12,283 ± 89 (−29 ± 60) |
 <!-- /gen:summary-table -->
 
 In-game values: mean ± 95 % confidence interval. In brackets: difference from Silas.
@@ -209,8 +209,8 @@ Experiments 3 and 4 use the same runs.
 | Emulator | ares v148 |
 | Input | The seven attract-mode demos of SM64: 4,304 measured frames, with approximately 456 sine and cosine calls per frame |
 | Builds | Two for each kernel. **`sincoss()`:** [`bench/hsm64-sincos.patch`](bench/hsm64-sincos.patch) changes 13 functions to get the sine and the cosine of one angle from one `trig_sincos` call. These 13 functions make 98 % of the sine and cosine pairs. **Separate calls:** the game calls `sins()` and `coss()`, and each is one `trig_sin` call. |
-| Test conditions | 12 samples. Each sample is one random draw of the four conditions below ([`bench/sample.py`](bench/sample.py)). All builds of a sample use the same draw. |
-| Result | The mean of the 12 samples ± the 95 % confidence interval (Student's t). In brackets: the difference from Silas in the same sample, with its own confidence interval. |
+| Test conditions | 15 samples. Each sample is one random draw of the four conditions below ([`bench/sample.py`](bench/sample.py)). All builds of a sample use the same draw. |
+| Result | The mean of the 15 samples ± the 95 % confidence interval (Student's t). In brackets: the difference from Silas in the same sample, with its own confidence interval. |
 
 **Test conditions:** The position of code and data in memory decides which of them collide in the caches. These collisions change each result by chance, by up to approximately ±3 %. Each sample draws the positions and the game state at random, from the full period of each cache:
 
@@ -231,13 +231,13 @@ Bytes per frame that cache misses move over the RDRAM bus. ares counts the misse
 <!-- gen:traffic -->
 | | `sincoss()` at the 13 changed call sites | Separate `sins()` and `coss()` calls |
 |---|---|---|
-| Silas | 545,710 ± 6,549 | 552,604 ± 8,953 |
-| S5C6 one cache line | 545,155 ± 5,883 (−555 ± 3,530) | 554,518 ± 9,188 (+1,914 ± 4,027) |
-| S5C6 pure code | 545,970 ± 6,432 (+259 ± 3,908) | 555,670 ± 9,031 (+3,066 ± 4,254) |
-| S5C6 quantized | 546,429 ± 6,056 (+719 ± 2,946) | 555,455 ± 9,171 (+2,851 ± 4,429) |
+| Silas | 544,176 ± 5,406 | 552,166 ± 7,633 |
+| S5C6 one cache line | 543,674 ± 4,862 (−502 ± 2,767) | 554,247 ± 7,925 (+2,081 ± 3,155) |
+| S5C6 pure code | 544,389 ± 5,352 (+213 ± 3,361) | 555,365 ± 7,758 (+3,200 ± 3,345) |
+| S5C6 quantized | 544,504 ± 5,189 (+328 ± 2,461) | 555,044 ± 7,806 (+2,879 ± 3,459) |
 
 - **Criterion 1:** S5C6 and Silas have the same memory traffic. Each difference interval contains 0.
-- Each difference interval is 0.8 % of the total traffic or less.
+- Each difference interval is 0.6 % of the total traffic or less.
 - Neither kernel reads a table. The kernels differ only in code size: 32 to 80 bytes when the code is not in the cache.
 <!-- /gen:traffic -->
 
@@ -248,10 +248,10 @@ Game-thread CPU time from the HackerSM64 profiler, in µs per frame. Audio is no
 <!-- gen:cputime -->
 | | `sincoss()` at the 13 changed call sites | Separate `sins()` and `coss()` calls |
 |---|---|---|
-| Silas | 12,338 ± 132 | 12,564 ± 178 |
-| S5C6 one cache line | 12,316 ± 104 (−22 ± 74) | 12,537 ± 181 (−27 ± 85) |
-| S5C6 pure code | 12,332 ± 114 (−7 ± 76) | 12,565 ± 186 (+1 ± 101) |
-| S5C6 quantized | 12,331 ± 112 (−8 ± 60) | 12,555 ± 186 (−8 ± 100) |
+| Silas | 12,312 ± 109 | 12,554 ± 147 |
+| S5C6 one cache line | 12,283 ± 89 (−29 ± 60) | 12,537 ± 152 (−17 ± 68) |
+| S5C6 pure code | 12,302 ± 95 (−10 ± 66) | 12,559 ± 156 (+4 ± 79) |
+| S5C6 quantized | 12,296 ± 96 (−16 ± 51) | 12,549 ± 155 (−5 ± 78) |
 
 - **Criterion 2:** S5C6 and Silas have the same CPU time in the game. Each difference interval contains 0.
 <!-- /gen:cputime -->
