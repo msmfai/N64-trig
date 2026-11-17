@@ -24,7 +24,8 @@ In-game values: mean ± 95 % confidence interval. In brackets: difference from S
 - S5C6 is 13 times more accurate than Silas.
 - For each call, S5C6 uses fewer CPU cycles than Silas.
 <!-- gen:summary-claim -->
-- In the game: refer to experiments 3 and 4 for the differences.
+- In the game, S5C6 has the same memory traffic as Silas and the same or less CPU time: up to 86 µs per frame less (refer to experiment 4).
+- Thus, S5C6 gives 13 times the accuracy for the same or a lower cost.
 <!-- /gen:summary-claim -->
 
 ## The question
@@ -252,7 +253,7 @@ Game-thread CPU time from the HackerSM64 profiler, in µs per frame. Audio is no
 | S5C6 pure code | 12,278 ± 134 (−25 ± 66) | 12,434 ± 71 (−78 ± 60) |
 | S5C6 quantized | 12,258 ± 143 (−45 ± 44) | 12,425 ± 71 (−86 ± 59) |
 
-- **Criterion 2:** S5C6 pure code with separate calls: 78 less than Silas (−78 ± 60). S5C6 quantized with `sincoss()`: 45 less than Silas (−45 ± 44). S5C6 quantized with separate calls: 86 less than Silas (−86 ± 59). All other differences are 0 within the interval.
+- **Criterion 2:** S5C6 pure code with separate calls: 78 µs per frame less than Silas (−78 ± 60). S5C6 quantized with `sincoss()`: 45 µs per frame less than Silas (−45 ± 44). S5C6 quantized with separate calls: 86 µs per frame less than Silas (−86 ± 59). All other differences contain 0: there, S5C6 and Silas have the same CPU time.
 <!-- /gen:cputime -->
 
 ## Checks
