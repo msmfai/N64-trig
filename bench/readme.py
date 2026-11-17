@@ -53,18 +53,21 @@ def table(data, ids, key):
     return '|' + SEP + rows
 
 
-def verdict(data, ids, key, noun, criterion):
-    """One sentence for each kernel and mode whose difference interval excludes 0; else 'the same'."""
-    out = []
+def verdict(data, ids, key, noun, criterion, unit):
+    """One sentence for each kernel and mode whose difference interval excludes 0; else 'the same'.
+    Also returns the significant differences as (mean, half-width)."""
+    out, sig = [], []
     for label, c, sc in S.KERNELS:
         for mode, b, base in (('with `sincoss()`', sc, S.BASE[2]), ('with separate calls', c, S.BASE[1])):
             m, h = S.mean_ci(S.diffs(data, ids, b, base, key))
             if abs(m) > h:
-                out.append(f'{label} {mode}: {abs(m):,.0f} {"less" if m < 0 else "more"} than Silas '
+                sig.append((m, h))
+                out.append(f'{label} {mode}: {abs(m):,.0f} {unit} {"less" if m < 0 else "more"} than Silas '
                            f'({S.fmt(m, h)}).')
     if not out:
-        return f'- **{criterion}:** S5C6 and Silas have the same {noun}. Each difference interval contains 0.\n', True
-    return f'- **{criterion}:** ' + ' '.join(out) + ' All other differences are 0 within the interval.\n', False
+        return f'- **{criterion}:** S5C6 and Silas have the same {noun}. Each difference interval contains 0.\n', sig
+    return (f'- **{criterion}:** ' + ' '.join(out) + ' All other differences contain 0: there, S5C6 and Silas '
+            f'have the same {noun}.\n', sig)
 
 
 def blocks():
@@ -74,8 +77,8 @@ def blocks():
     by = S.mean_ci([S.per_frame(data[i][S.BASE[2]])['bytes'] for i in ids])
     us = S.mean_ci([S.per_frame(data[i][S.BASE[2]])['us'] for i in ids])
     k = S.KERNELS[0]
-    t_line, t_same = verdict(data, ids, 'bytes', 'memory traffic', 'Criterion 1')
-    c_line, c_same = verdict(data, ids, 'us', 'CPU time in the game', 'Criterion 2')
+    t_line, t_sig = verdict(data, ids, 'bytes', 'memory traffic', 'Criterion 1', 'bytes per frame')
+    c_line, c_sig = verdict(data, ids, 'us', 'CPU time', 'Criterion 2', 'µs per frame')
     widest = max(S.mean_ci(S.diffs(data, ids, b, base, 'bytes'))[1]
                  for _, c, sc in S.KERNELS for b, base in ((sc, S.BASE[2]), (c, S.BASE[1])))
     g = {}
@@ -88,11 +91,21 @@ def blocks():
         f'{S.cell(data, ids, k[2], S.BASE[2], "bytes")} |\n'
         f'| CPU time in the game, µs per frame | {us[0]:,.0f} ± {us[1]:,.0f} | '
         f'{S.cell(data, ids, k[2], S.BASE[2], "us")} |\n')
-    if t_same and c_same:
-        g['summary-claim'] = ('- In the game, S5C6 has the same memory traffic and the same CPU time as Silas.\n'
-                              '- Thus, S5C6 gives 13 times the accuracy for the same cost.\n')
+    traffic = ('the same memory traffic as Silas' if not t_sig else
+               'less memory traffic than Silas' if all(m < 0 for m, _ in t_sig) else
+               'more memory traffic than Silas in some builds (refer to experiment 3)')
+    if not c_sig:
+        cpu, cost = 'the same CPU time', 'for the same cost'
+    elif all(m < 0 for m, _ in c_sig):
+        cpu = (f'the same or less CPU time: up to {max(-m for m, _ in c_sig):,.0f} µs per frame less '
+               '(refer to experiment 4)')
+        cost = 'for the same or a lower cost'
     else:
-        g['summary-claim'] = ('- In the game: refer to experiments 3 and 4 for the differences.\n')
+        cpu, cost = 'more CPU time in some builds (refer to experiment 4)', None
+    g['summary-claim'] = f'- In the game, S5C6 has {traffic} and {cpu}.\n'
+    if cost and not (t_sig and any(m > 0 for m, _ in t_sig)):
+        g['summary-claim'] += f'- Thus, S5C6 gives 13 times the accuracy {cost}.\n'
+
     if sampled:
         g['method'] = METHOD_HEAD.format(emulator=EMU_SAMPLES) + (
             f'| Test conditions | {n} samples. Each sample is one random draw of the four conditions below '
