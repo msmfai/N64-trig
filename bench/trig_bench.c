@@ -442,6 +442,9 @@ static void tb_emux_report(void) {
 #define TB_X_DMISS 0x21
 #define TB_X_DWB 0x22
 #define TB_X_IMISS 0x11
+#define TB_BUS_N 6
+static const u32 sBusCodes[TB_BUS_N] = { 0x300, 0x310, 0x320, 0x330, 0x340, 0x370 };
+static u32 sPrevBus[TB_BUS_N];
 
 static s32 sEmux = -1;
 static u32 sPrevDMiss, sPrevDWb, sPrevIMiss;
@@ -449,6 +452,8 @@ static u32 sPrevDMiss, sPrevDWb, sPrevIMiss;
 /* Cache events since the previous frame, added to the demo being measured. */
 static void trig_bench_cache(void) {
     u32 dm, dw, im;
+    u32 bus[TB_BUS_N];
+    s32 k;
     struct TrigBenchDemo *d;
 
     if (sEmux < 0) {
@@ -466,6 +471,9 @@ static void trig_bench_cache(void) {
     dm = tb_emux_counter(TB_X_DMISS);
     dw = tb_emux_counter(TB_X_DWB);
     im = tb_emux_counter(TB_X_IMISS);
+    for (k = 0; k < TB_BUS_N; k++) {
+        bus[k] = tb_emux_counter(sBusCodes[k]);
+    }
     tb_emux_prof(FALSE);
     if (!gTrigBench.done && gTrigBench.demo >= 0 && gCurrDemoInput != NULL && sFramesInDemo > TB_SKIP) {
         d = &gTrigBench.d[gTrigBench.demo];
@@ -473,6 +481,15 @@ static void trig_bench_cache(void) {
         d->dMisses += dm - sPrevDMiss;
         d->dWrites += dw - sPrevDWb;
         d->iMisses += im - sPrevIMiss;
+        d->busTotal += bus[0] - sPrevBus[0];
+        d->busICache += bus[1] - sPrevBus[1];
+        d->busDCache += bus[2] - sPrevBus[2];
+        d->busUncached += bus[3] - sPrevBus[3];
+        d->busSpDma += bus[4] - sPrevBus[4];
+        d->busDpDraw += bus[5] - sPrevBus[5];
+    }
+    for (k = 0; k < TB_BUS_N; k++) {
+        sPrevBus[k] = bus[k];
     }
     sPrevDMiss = dm;
     sPrevDWb = dw;

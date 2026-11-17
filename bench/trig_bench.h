@@ -43,6 +43,15 @@ struct TrigBenchDemo {
     u32 dWrites;   /* dirty D-cache lines written back (40 cycles each) */
     u32 iMisses;   /* I-cache line fills (48 cycles each) */
     u32 emux;
+    /* Ares 64 only: bytes moved over the RDRAM bus over those frames, by
+     * device (emux XPROFREAD 0x300-0x370). 0 on other emulators. */
+    u32 busTotal;    /* all hardware devices */
+    u32 busICache;   /* CPU instruction-cache fills */
+    u32 busDCache;   /* CPU data-cache fills and write-backs */
+    u32 busUncached; /* CPU uncached reads and writes */
+    u32 busSpDma;    /* RSP DMA */
+    u32 busDpDraw;   /* RDP drawing (frame buffer, depth buffer) */
+    u32 busPad[2];
 };
 
 struct TrigBench {

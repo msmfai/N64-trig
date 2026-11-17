@@ -37,7 +37,7 @@ LEVELS = {30: 'bitdw', 24: 'wf', 5: 'ccm', 4: 'bbh', 12: 'jrb', 7: 'hmc', 27: 'p
 TB_MAGIC = 0x54524947
 TB_DEMOS = 8
 HEADER = struct.Struct('>IIIIIiII')
-DEMO = struct.Struct('>IIQIIIIQQIIII')
+DEMO = struct.Struct('>IIQIIIIQQIIIIIIIIIIII')
 CPU_HZ = 93.75e6
 FRAME_US = 1e6 / 30
 PAIRS = [('tsilas', 'silas'), ('tbfsk', 'bfsk'), ('tasilas', 'asilas'), ('tabfsk', 'abfsk'),
@@ -73,6 +73,8 @@ Paths
 
 
 def default_ares():
+    if os.environ.get('ARES'):                # e.g. Ares 64: .../build_hl/test-runner/ares-test
+        return os.environ['ARES']
     mac = Path('/Applications/ares.app/Contents/MacOS/ares')
     if platform.system() == 'Darwin' and mac.exists():
         return str(mac)
@@ -85,12 +87,15 @@ def parse(hexline):
     demos = []
     for i in range(TB_DEMOS):
         (level, frames, cycles, max_cycles, calls, state, _, preempted, audio,
-         d_misses, d_writes, i_misses, emux) = DEMO.unpack_from(raw, HEADER.size + i * DEMO.size)
+         d_misses, d_writes, i_misses, emux, bus_total, bus_icache, bus_dcache, bus_uncached, bus_sp_dma,
+         bus_dp_draw, _, _) = DEMO.unpack_from(raw, HEADER.size + i * DEMO.size)
         if frames:
             demos.append({'level': LEVELS.get(level, str(level)), 'frames': frames, 'cycles': cycles,
                           'preempted': preempted, 'audio': audio, 'max_cycles': max_cycles, 'calls': calls,
                           'hash': f'{state:08x}', 'emux': emux, 'd_misses': d_misses,
-                          'd_writes': d_writes, 'i_misses': i_misses})
+                          'd_writes': d_writes, 'i_misses': i_misses, 'bus_total': bus_total,
+                          'bus_icache': bus_icache, 'bus_dcache': bus_dcache, 'bus_uncached': bus_uncached,
+                          'bus_sp_dma': bus_sp_dma, 'bus_dp_draw': bus_dp_draw})
     return {'magic_ok': magic == TB_MAGIC, 'func': func, 'use': use, 'counting': counting, 'done': done,
             'demo': demo, 'demos_run': demos_run, 'demos': demos}
 
@@ -115,8 +120,11 @@ class Run:
         (work / 'saves').mkdir(parents=True)
         (work / 'settings.bml').write_text(SETTINGS.format(saves=work / 'saves'))
         self.log = (work / 'ares.log').open('wb')
-        self.proc = subprocess.Popen([ares, '--settings-file', str(work / 'settings.bml'), '--kiosk', str(rom)],
-                                     stdout=subprocess.PIPE, stderr=self.log, start_new_session=True)
+        if Path(ares).name == 'ares-test':     # Ares 64's headless runner (bench/ares64.js)
+            cmd = [ares, str(HERE / 'ares64.js'), str(rom), 'none', 'interp', '--timeout', '7200']
+        else:                                  # ares v148 or later
+            cmd = [ares, '--settings-file', str(work / 'settings.bml'), '--kiosk', str(rom)]
+        self.proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=self.log, start_new_session=True)
         self.start = time.time()
 
     def feed(self, chunk):
