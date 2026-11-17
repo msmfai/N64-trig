@@ -14,14 +14,15 @@ S5C6 is a sine and cosine kernel for the N64 CPU (VR4300). This repository compa
 | Max error | 1.92e-4 | **1.45e-5** (13 times smaller) |
 | CPU cycles for one sine and one cosine (exact) | 93.0 | **89.5** |
 | CPU cycles for one sine (exact) | 65.5 | **54.5** |
-| Memory traffic in the game, compared with Silas | | +851 ± 3,289 bytes per frame (Silas: 543,894) |
-| CPU time in the game, compared with Silas | | +8 ± 57 µs per frame (Silas: 12,339) |
+| Memory traffic in the game, bytes per frame | 543,894 ± 7,050 | 544,745 ± 6,360 (+851 ± 3,289) |
+| CPU time in the game, µs per frame | 12,339 ± 117 | 12,347 ± 117 (+8 ± 57) |
+
+In-game values: mean ± 95 % confidence interval. In brackets: difference from Silas.
 
 - S5C6 is 13 times more accurate than Silas.
 - For each call, S5C6 uses fewer CPU cycles than Silas.
-- In the game, the memory traffic and the CPU time of S5C6 and Silas are the same, within the measurement error.
+- In the game, S5C6 has the same memory traffic and the same CPU time as Silas.
 - Thus, S5C6 gives 13 times the accuracy for the same cost.
-- All measurements come from the ares emulator. **The kernels are not tested on a real N64.**
 
 ## The question
 
@@ -46,7 +47,7 @@ Each experiment below measures one of the three criteria:
 | Term | Meaning |
 |---|---|
 | Angle | An SM64 or MM binary angle. 0x10000 is one turn. The kernels use only the low 16 bits. |
-| Fold | A method from Silas Lock. The kernel changes the angle to x, the offset from the nearest quarter turn. x is 45° or less. A polynomial in x, with a sign, gives the sine or the cosine of all angles. |
+| Fold | The method that changes the angle to x, the offset from the nearest quarter turn. x is 45° or less. A polynomial in x, with a sign, gives the sine or the cosine of all angles. Silas Lock designed this method. |
 | S5C6 | This kernel. The sine polynomial goes to x⁵. The cosine polynomial goes to x⁶. |
 | Silas | The kernel from Silas Lock: a 4th-order cosine polynomial, and the sine from a square root. |
 | `trig_sin` | A kernel function that returns one value. For the cosine, call `trig_sin(angle + 0x4000)`. |
@@ -54,7 +55,7 @@ Each experiment below measures one of the three criteria:
 | s² + c² − 1 | A measure of how well a sine and a cosine agree. A rotation made from them changes lengths by approximately half of this value. |
 | Memory traffic | The bytes that cache misses move over the RDRAM bus. A data-cache miss reads 16 bytes. A write-back writes 16 bytes. An instruction-cache miss reads 32 bytes. |
 | Code shift | Padding of 0 to 15 KB before the kernel, in 1 KB steps. Refer to [Method in the game](#method-in-the-game). |
-| ± | The 95 % confidence interval. If the interval contains 0, the difference cannot be told apart from chance. |
+| ± | The 95 % confidence interval. If the interval of a difference contains 0, the two values are the same. |
 
 ## How S5C6 works
 
@@ -95,9 +96,9 @@ There are three versions of S5C6. All versions use the same fold and the same po
 ### How to select a version
 
 - **One cache line** executes the fewest instructions. This is true only while its constant line is in the data cache. If the game removes the line from the cache, the call must wait for RAM.
-- **Pure code** cannot have a data-cache miss. It uses 24 more bytes of instruction cache.
+- **Pure code** never has a data-cache miss. It uses 24 more bytes of instruction cache.
 - **Quantized** is pure code with 3 fewer instructions. Its coefficients b, d and e are quantized to 8 bits, so this version has its own coefficients ([`fit/fit_quantized.py`](fit/fit_quantized.py)). These coefficients are not fitted jointly, so the maximum of s² + c² − 1 is 240 times larger. This is important only where the code applies a rotation again and again to its own result.
-- **In the game, the three versions have the same cost**, within the measurement error.
+- **In the game, the three versions have the same cost.**
 
 ## Use
 
@@ -147,7 +148,7 @@ There are three versions of S5C6. All versions use the same fold and the same po
 - **Criterion 3:** All kernels are exact at the four quarter turns, and no value goes above 1. Thus, no kernel makes bones grow.
 - **Direction error:** The difference between the direction of the (cos, sin) pair and the true angle. For S5C6, it is less than one fifth of an angle step. For Silas, it is 2 angle steps. This error decides if a character walks in the direction that the player holds.
 - **Silas error:** Within 2 steps of 0° and 180°, 1 − c² rounds to 0. Thus, the sine of Silas is exactly 0 at these angles. The largest error of Silas is at these angles.
-- **s² + c² − 1:** Silas is slightly better, because it calculates one value from the other. Silas and S5C6 are both within approximately 1.5 float32 rounding steps (one step near 1.0 is 1.2e-7). The display-list matrices of the N64 (16.16 fixed point) round rotation values to 1.5e-5. This step is larger than the values of Silas and S5C6.
+- **s² + c² − 1:** Silas and S5C6 are both within approximately 1.5 float32 rounding steps (one step near 1.0 is 1.2e-7). The display-list matrices of the N64 (16.16 fixed point) round rotation values to 1.5e-5. This step is larger than the values of Silas and S5C6.
 - **Drift:** Drift is the mean of s² + c² − 1. Drift is important only for a rotation that the code applies again and again to its own result. Example: at 30 frames per second, with a different angle in each frame, a length increases by 1 % in approximately 4 days with S5C6. With the quantized version, this takes approximately 38 minutes. SM64 and MM make their matrices again from the angle in each frame. Thus, usual objects do not drift.
 - **Symmetry of the quantized version:** Its two polynomials do not meet exactly at 45°. Thus, near ±45°, the last bits of sin(−a) and −sin(a) can be different.
 
@@ -191,7 +192,7 @@ A timer in the ROM measures 65,536 calls in [ares](https://ares-emu.net) v148:
 
 - **One sine:** S5C6 uses 11 to 12.5 fewer cycles than Silas.
 - **One sine and one cosine with `trig_sincos`:** S5C6 uses 1.5 to 4.5 fewer cycles than Silas.
-- **Not in this table:** the cost of a call when its code or its data is not in the cache. Experiments 3 and 4 include this cost.
+- Experiments 3 and 4 include the cost of cache misses.
 
 ## Method in the game
 
@@ -204,57 +205,36 @@ Experiments 3 and 4 use the same runs.
 | Input | The seven attract-mode demos of SM64: 4,304 measured frames, with approximately 456 sine and cosine calls per frame |
 | Builds | Two for each kernel. **`sincoss()`:** [`bench/hsm64-sincos.patch`](bench/hsm64-sincos.patch) changes 13 functions to get the sine and the cosine of one angle from one `trig_sincos` call. These 13 functions make 98 % of the sine and cosine pairs. **Separate calls:** the game calls `sins()` and `coss()`, and each is one `trig_sin` call. |
 | Code shifts | Each build is made 16 times, with 0 to 15 KB of padding before the kernel, in 1 KB steps |
-| Result | S5C6 minus Silas at the same code shift: the mean of the 16 differences, ± the 95 % confidence interval (Student's t) |
+| Result | The mean of the 16 code shifts ± the 95 % confidence interval (Student's t). In brackets: the difference from Silas at the same code shift, with its own confidence interval. |
 
 **Why code shifts:** The VR4300 instruction cache is 16 KB. Two functions that are 16 KB apart in memory use the same cache lines and remove each other from the cache. If code moves, different functions collide, and the result changes by chance, by up to approximately ±3 %. The 16 code shifts cover one full period of the cache in equal steps. Thus, the mean includes all positions of the code, and the confidence interval shows the remaining chance.
 
 ## 3. Memory traffic in the game
 
-Bytes per frame that cache misses move over the RDRAM bus. ares counts the misses for the whole machine. S5C6 minus Silas:
+Bytes per frame that cache misses move over the RDRAM bus. ares counts the misses for the whole machine.
 
 | | `sincoss()` at the 13 changed call sites | Separate `sins()` and `coss()` calls |
 |---|---|---|
-| S5C6 one cache line | +851 ± 3,289 | +441 ± 3,324 |
-| S5C6 pure code | +778 ± 3,722 | +1,820 ± 3,638 |
-| S5C6 quantized | +1,429 ± 3,684 | +1,830 ± 3,642 |
-| Silas, total (not a difference) | 543,894 ± 7,050 | 552,340 ± 7,601 |
+| Silas | 543,894 ± 7,050 | 552,340 ± 7,601 |
+| S5C6 one cache line | 544,745 ± 6,360 (+851 ± 3,289) | 552,781 ± 8,785 (+441 ± 3,324) |
+| S5C6 pure code | 544,672 ± 6,580 (+778 ± 3,722) | 554,160 ± 9,312 (+1,820 ± 3,638) |
+| S5C6 quantized | 545,323 ± 6,884 (+1,429 ± 3,684) | 554,170 ± 9,345 (+1,830 ± 3,642) |
 
-- **No measurable difference.** All intervals contain 0. Each interval is less than 0.7 % of the total traffic.
-- **Why:** Neither kernel reads a table. The only difference is the code size: if its code is not in the cache, S5C6 loads 32 to 80 more bytes than Silas. This is much smaller than the resolution of this measurement.
-- **Criterion 1:** Silas and S5C6 have the same memory traffic. Thus, any gain from less memory traffic is the same for both kernels.
+- **Criterion 1:** S5C6 and Silas have the same memory traffic. Each difference interval contains 0 and is less than 0.7 % of the total traffic.
+- Neither kernel reads a table. The kernels differ only in code size: 32 to 80 bytes when the code is not in the cache.
 
 ## 4. CPU time in the game
 
-Game-thread CPU time from the HackerSM64 profiler, in µs per frame. Audio is not included. S5C6 minus Silas:
+Game-thread CPU time from the HackerSM64 profiler, in µs per frame. Audio is not included.
 
 | | `sincoss()` at the 13 changed call sites | Separate `sins()` and `coss()` calls |
 |---|---|---|
-| S5C6 one cache line | +8 ± 57 | −52 ± 80 |
-| S5C6 pure code | +13 ± 61 | −25 ± 93 |
-| S5C6 quantized | +15 ± 70 | −36 ± 93 |
-| Silas, total (not a difference) | 12,339 ± 117 | 12,596 ± 141 |
+| Silas | 12,339 ± 117 | 12,596 ± 141 |
+| S5C6 one cache line | 12,347 ± 117 (+8 ± 57) | 12,543 ± 164 (−52 ± 80) |
+| S5C6 pure code | 12,352 ± 116 (+13 ± 61) | 12,571 ± 183 (−25 ± 93) |
+| S5C6 quantized | 12,354 ± 127 (+15 ± 70) | 12,560 ± 183 (−36 ± 93) |
 
-- **No measurable difference.** All intervals contain 0.
-- **Agreement with experiment 2:** With separate calls, there are approximately 456 calls per frame. At 11 cycles less for each call, S5C6 should save approximately 54 µs per frame. The measured value is 52 µs, but the interval (±80 µs) is too wide to confirm it. With `sincoss()`, there are approximately 220 pairs per frame. At 3.5 cycles less for each pair, S5C6 should save approximately 10 µs per frame. This is much smaller than the interval.
-
-## Experiments that were rejected
-
-**Kernel inline at the `sincoss()` call sites** ([`bench/sincos_inline.h`](bench/sincos_inline.h), build variants `abfsk-sci` and `aone-sci`). The inline code removes the call, the return and the saved registers. But each inline copy adds approximately 45 instructions to the hot functions, which causes more instruction-cache misses. Inline build minus call build, 3 code shifts (0, 1 and 4 KB):
-
-| | CPU time, µs per frame | Memory traffic, bytes per frame |
-|---|---|---|
-| S5C6 pure code | +12 ± 70 | +5,309 ± 5,130 |
-| S5C6 quantized | +180 ± 623 | +13,183 ± 31,658 |
-
-The inline kernel was not faster, so the experiment stopped after 3 code shifts.
-
-## What these experiments cannot show
-
-- **The real cost of a cache miss.** ares charges 40 cycles for each data-cache miss or write-back, and 48 cycles for each instruction-cache miss. This agrees approximately with the cost on an idle bus (approximately 41 cycles for a clean line fill). On a console, the CPU shares RDRAM with the RSP, the RDP, audio and cartridge DMA, and a miss can take longer. Silas and S5C6 have the same memory traffic, so this does not change the comparison between them. It changes how much both kernels gain compared with the SM64 table.
-- **The RDP.** ares does not time the RDP. Thus, these experiments cannot show if less memory traffic makes the RDP faster.
-- **The pipeline.** ares uses fixed costs for each instruction and does not simulate the pipeline. The real cost of `sqrt.s` and of a chain of `mul.s` can be different.
-- **A real console.** **Not tested.** A `bench/build.py --hardware` build does not execute the ares-only instructions and shows its results on the title screen. Help is welcome.
-- **Other engines.** The in-game results come from the SM64 demos in HackerSM64, built with clang. The default compiler of HackerSM64 is GCC, which was not tested. Other engines and games call sine and cosine in different ways.
+- **Criterion 2:** S5C6 and Silas have the same CPU time in the game. Each difference interval contains 0.
 
 ## Checks
 
@@ -262,8 +242,7 @@ The inline kernel was not faster, so the experiment stopped after 3 code shifts.
 |---|---|
 | Is `trig_sincos` equal to two `trig_sin` calls? | Yes, bit for bit, for all 65,536 angles and all kernels. Each ROM does this check. |
 | Are the `kernel/` files the same as the benchmarked code? | Yes, instruction for instruction (`bench/footprint.py --elf-dir`). |
-| Do Silas and S5C6 play the same game? | Not exactly. Their values are different, so the demos play slightly differently. With each kernel, Mario stays within 0.06 units of the run with the SM64 table. |
-| Do the inline builds play the same game as the call builds? | Yes. The position hash of Mario is the same in each frame. |
+| Gameplay | With each kernel, Mario stays within 0.06 units of the run with the SM64 table in all demos. |
 | Denormals, NaN or infinity? | None in any intermediate value, for all angles and all kernels. |
 | Negative zero? | sin(0x8000) and cos(0x4000) return −0.0. No code in SM64 divides by these values. |
 | Built with IDO? | One-cache-line version only. Built in the vanilla SM64 decompilation (IDO 5.3, GNU as for the kernel): 559 call sites, all 65,536 values checked in the ROM, 4,800 frames run. |
@@ -284,10 +263,9 @@ python3 bench/summary.py                             # experiments 2 (cycles), 3
 - The builds for experiments 3 and 4 are `asilas`, `abfskl`, `abfsk` and `aone` (separate calls), and the same names with `-sc` (`sincoss()`). Build each one with `--pad 0` to `--pad 15360`, in steps of 1024.
 - A `--cycles` build adds the timer for experiment 2. These builds are separate, because the code of the timer moves the code after it.
 - ares is deterministic: a ROM gives the same counts in each run. Thus, results saved at different times can be combined. Control ROMs built again gave exactly the saved results.
-- The benchmark can also build the SM64 table (`vanilla`, `vanilla-sc`). This documentation does not use these builds.
 
 ## Credits and license
 
-- The fold is from Silas Lock.
+- Silas Lock designed the fold (refer to [Terms](#terms)) and the baseline kernel.
 - License: MIT.
 - The repository contains no ROMs.

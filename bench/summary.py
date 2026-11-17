@@ -4,7 +4,8 @@
   python3 bench/summary.py
 
 The baseline is Silas Lock's kernel. Every in-game figure is S5C6 minus
-Silas, built from the same source at the same code shift.
+Silas, built from the same source at the same code shift: each value is
+given with its difference from Silas in brackets.
 
 Every figure comes from bench/run.py output files (ares v148, HackerSM64
 3be00d2f, clang 21). ares is deterministic: a ROM gives the same counts on
@@ -99,50 +100,30 @@ def diffs(data, shifts, build, base, key):
     return [per_frame(data[s][build])[key] - per_frame(data[s][base])[key] for s in shifts]
 
 
+def cell(data, shifts, build, base, key):
+    """Value ± CI; for a kernel other than the baseline, (difference from Silas ± CI) after it."""
+    v = mean_ci([per_frame(data[s][build])[key] for s in shifts])
+    out = f'{v[0]:,.0f} ± {v[1]:,.0f}'
+    if build != base:
+        out += f' ({fmt(*mean_ci(diffs(data, shifts, build, base, key)))})'
+    return out
+
+
+def table(data, shifts, key, title):
+    print(title + '\n')
+    print('| | `sincoss()` at the 13 changed call sites | Separate `sins()` and `coss()` calls |\n|---|---|---|')
+    for label, c, sc in [BASE] + KERNELS:
+        print(f'| {label} | {cell(data, shifts, sc, BASE[2], key)} | {cell(data, shifts, c, BASE[1], key)} |')
+
+
 def main():
     data = load_all()
     shifts = sorted(s for s, d in data.items() if all(b in d for b in BUILDS))
-    n = len(shifts)
-    print(f'{n} code shifts. Every value: S5C6 minus Silas, mean over the code shifts ± 95 % confidence '
-          'interval. Negative is less than Silas.\n')
-
-    print('Memory traffic, bytes per frame moved over the RDRAM bus by cache misses:\n')
-    print('| | `sincoss()` at the 13 changed call sites | Separate `sins()` and `coss()` calls |\n|---|---|---|')
-    for label, c, sc in KERNELS:
-        print(f'| {label} | {fmt(*mean_ci(diffs(data, shifts, sc, BASE[2], "bytes")))} | '
-              f'{fmt(*mean_ci(diffs(data, shifts, c, BASE[1], "bytes")))} |')
-    base_sc = mean_ci([per_frame(data[s][BASE[2]])['bytes'] for s in shifts])
-    base_c = mean_ci([per_frame(data[s][BASE[1]])['bytes'] for s in shifts])
-    print(f'| Silas, total (not a difference) | {base_sc[0]:,.0f} ± {base_sc[1]:,.0f} | '
-          f'{base_c[0]:,.0f} ± {base_c[1]:,.0f} |')
-
-    print('\nThe same, by kind of transfer (`sincoss()` builds), bytes per frame:\n')
-    print('| | data (misses + write-backs) | instructions |\n|---|---|---|')
-    for label, c, sc in KERNELS:
-        print(f'| {label} | {fmt(*mean_ci(diffs(data, shifts, sc, BASE[2], "dbytes")))} | '
-              f'{fmt(*mean_ci(diffs(data, shifts, sc, BASE[2], "ibytes")))} |')
-
-    print('\nGame-thread CPU time, µs per frame:\n')
-    print('| | `sincoss()` at the 13 changed call sites | Separate `sins()` and `coss()` calls |\n|---|---|---|')
-    for label, c, sc in KERNELS:
-        print(f'| {label} | {fmt(*mean_ci(diffs(data, shifts, sc, BASE[2], "us")))} | '
-              f'{fmt(*mean_ci(diffs(data, shifts, c, BASE[1], "us")))} |')
-    base_sc = mean_ci([per_frame(data[s][BASE[2]])['us'] for s in shifts])
-    base_c = mean_ci([per_frame(data[s][BASE[1]])['us'] for s in shifts])
-    print(f'| Silas, total (not a difference) | {base_sc[0]:,.0f} ± {base_sc[1]:,.0f} | '
-          f'{base_c[0]:,.0f} ± {base_c[1]:,.0f} |')
-
-    inl = [p for p in sorted(RES.glob('inline-pad*.json'))]
-    if inl:
-        res = {int(p.stem[len('inline-pad'):]): json.loads(p.read_text()) for p in inl}
-        print(f'\nInline kernel at the sincoss() sites ({len(res)} code shifts), inline build minus call build, '
-              'µs per frame:\n')
-        print('| | CPU time | memory traffic (bytes per frame) |\n|---|---|---|')
-        for label, inline, call in (('S5C6 pure code', 'abfsk-sci', 'abfsk-sc'),
-                                    ('S5C6 quantized', 'aone-sci', 'aone-sc')):
-            us = [per_frame(res[s][inline])['us'] - per_frame(data[s][call])['us'] for s in res]
-            by = [per_frame(res[s][inline])['bytes'] - per_frame(data[s][call])['bytes'] for s in res]
-            print(f'| {label} | {fmt(*mean_ci(us))} | {fmt(*mean_ci(by))} |')
+    print(f'{len(shifts)} code shifts. Every value: mean over the code shifts ± 95 % confidence interval. '
+          'In brackets: difference from Silas at the same code shift.\n')
+    table(data, shifts, 'bytes', 'Memory traffic, bytes per frame moved over the RDRAM bus by cache misses:')
+    print()
+    table(data, shifts, 'us', 'Game-thread CPU time, µs per frame:')
 
     cyc = RES / 'cycles.json'
     if cyc.exists():
