@@ -51,10 +51,28 @@ S(x) = √(1 − C(x)²)</pre>
 <tr><td><a href="#g-us">µs/frame</a> saved vs Silas, mean of 3 <a href="#g-layout">layouts</a></td><td>62</td><td>0</td></tr>
 </table></div>
 <ul>
-<li>Kernel: <a href="#k-sincos">below</a>, or <a href="https://github.com/msmfai/N64-trig/blob/main/kernel/sincos.s">kernel/sincos.s</a>, <a href="https://github.com/msmfai/N64-trig/blob/main/kernel/sincos_code.s">kernel/sincos_code.s</a> (no data), <a href="https://github.com/msmfai/N64-trig/blob/main/kernel/sincos.h">kernel/sincos.h</a>.</li>
+<li>Kernel: <a href="#k-sincos">below</a>, in two versions (see <a href="#two-versions">the next section</a>): <a href="https://github.com/msmfai/N64-trig/blob/main/kernel/sincos.s">kernel/sincos.s</a> (one cache line) and <a href="https://github.com/msmfai/N64-trig/blob/main/kernel/sincos_code.s">kernel/sincos_code.s</a> (pure code), with the C macro <a href="https://github.com/msmfai/N64-trig/blob/main/kernel/sincos.h">kernel/sincos.h</a>.</li>
 <li>Measured in <a href="#g-ares">ares</a> v148 on <a href="#g-hsm64">HackerSM64</a> built with clang 21: 7 attract demos, 4,304 frames, about 440 sin/cos per frame, with 13 functions converted to sincos.</li>
 <li>Not tested on a real N64. Help with a console run is appreciated: <code>build.py --hardware</code> makes ROMs that show results on the title screen.</li>
 <li>The rest of this page also compares the game's <a href="#g-table">vanilla table</a> and <a href="#g-lutx16">LUTX16</a>, as separate calls and as sincos.</li>
+</ul>
+
+<h2 id="two-versions">Two versions: one cache line, or pure code</h2>
+<p>The kernel comes in two versions. They use the same polynomial and give bit-identical results. The only difference is where four of the six constants come from.</p>
+<div class="scroll"><table>
+<tr><th></th><th><a href="https://github.com/msmfai/N64-trig/blob/main/kernel/sincos.s">sincos.s</a>: one cache line</th><th><a href="https://github.com/msmfai/N64-trig/blob/main/kernel/sincos_code.s">sincos_code.s</a>: pure code</th></tr>
+<tr><td>c, f and 1.0</td><td>one <code>lui</code> each</td><td>one <code>lui</code> each</td></tr>
+<tr><td>a, b, d, e</td><td>read from <code>trig_k</code>, one 16-byte data-cache line</td><td><code>lui</code> + <code>ori</code> each</td></tr>
+<tr><td>data</td><td>16 B, 16-byte aligned</td><td>none</td></tr>
+<tr><td>instructions executed per sincos</td><td>39–44</td><td>45–50</td></tr>
+<tr><td><a href="#g-us">µs/frame</a> saved vs Silas, mean of 3 <a href="#g-layout">layouts</a></td><td>62</td><td>66</td></tr>
+</table></div>
+<p>Why there are two:</p>
+<ul>
+<li>The cache-line version runs 6 fewer instructions, but only if its line is already in the data cache. If the game has evicted the line, the call waits for RAM (a <a href="#g-miss">cache miss</a>).</li>
+<li>The pure-code version can never miss on data. It costs 24 more bytes of instruction cache instead.</li>
+<li>On <a href="#g-ares">ares</a> the two are tied: the gap is smaller than the ±3% that code layout alone moves results. ares charges a flat cost per miss and doesn't model RAM contention, so it can't say which one wins on a console. That is why both are kept until someone measures on hardware.</li>
+<li>The pure-code version is one self-contained file, with no <code>.rodata</code> to place or align. Use it if that is easier for your build.</li>
 </ul>
 
 <h2>Accuracy and size</h2>
