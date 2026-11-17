@@ -10,7 +10,7 @@
  *      top coefficients in 8 mantissa bits (fit/fit.py)
  *   4-7  hand-written kernels in trig_kernels.s (GNU as): 4 Silas, 5 S5C6/BFSK
  *      with every constant in code, 6 S5C6/BFSK with four constants loaded
- *      from one line, 7 LUTX16, 8 S5C6 "one constant" (only S1 at full
+ *      from one line, 7 LUTX16, 8 S5C6 "quantized" (only S1 at full
  *      precision, every constant in code). This file then only provides their data.
  *
  * Whether sins()/coss() call it (TRIG_USE 1) or stay table lookups on a table

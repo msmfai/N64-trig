@@ -20,7 +20,7 @@ KERNELS = [
     ('Silas', 'tasilas', 'asilas', 'asilas-sc'),
     ('S5C6 one cache line', 'tabfskl', 'abfskl', 'abfskl-sc'),
     ('S5C6 pure code', 'tabfsk', 'abfsk', 'abfsk-sc'),
-    ('S5C6 one constant', 'taone', 'aone', 'aone-sc'),
+    ('S5C6 quantized', 'taone', 'aone', 'aone-sc'),
 ]
 
 

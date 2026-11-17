@@ -27,7 +27,7 @@ KERNELS = [  # (label, source, cpp defines, functions, data bytes, benchmark var
     ('Silas', HERE / 'trig_kernels.s', ['-DTRIG_FUNC=4', '-DTRIG_SINCOS=1'], ('trig_sin', 'trig_sincos'), 0, 'asilas-sc'),
     ('S5C6 one cache line', REPO / 'kernel/s5c6.s', None, ('trig_sin', 'trig_sincos'), 16, 'abfskl-sc'),
     ('S5C6 pure code', REPO / 'kernel/s5c6_code.s', None, ('trig_sin', 'trig_sincos'), 0, 'abfsk-sc'),
-    ('S5C6 one constant', REPO / 'kernel/s5c6_one.s', None, ('trig_sin', 'trig_sincos'), 0, 'aone-sc'),
+    ('S5C6 quantized', REPO / 'kernel/s5c6_quantized.s', None, ('trig_sin', 'trig_sincos'), 0, 'aone-sc'),
 ]
 FPU = ('mul.s', 'add.s', 'sub.s', 'sqrt.s', 'cvt.s.w', 'neg.s', 'mov.s', 'mtc1', 'lwc1')
 

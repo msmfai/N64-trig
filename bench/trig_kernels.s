@@ -5,9 +5,9 @@
 #   6  S5C6 with BFSK's coefficients, the two short ones and 1.0 built in code,
 #      the four long ones loaded from one 16-byte-aligned line (gTrigK)
 #   7  LUTX16: 16-segment table + quadratic (gTrigLutx16, 17 x 32 bytes)
-#   8  S5C6 "one constant": only S1 at full precision (lui + ori), the other
+#   8  S5C6 "quantized": only S1 at full precision (lui + ori), the other
 #      five in 8 mantissa bits (one lui each); no data. Its own coefficients
-#      (fit/fit_one.py), less accurate than BFSK.
+#      (fit/fit_quantized.py), less accurate than BFSK.
 #
 # float trig_sin(int angle): angle in $a0 (any value; only bits 0-15 matter),
 # result in $f0. With TRIG_SINCOS, also _Complex float trig_sincos(int angle):

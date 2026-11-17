@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Fit the "one constant" S5C6 coefficients (kernel/s5c6_one.s, sincos_one.s).
+"""Fit the "quantized" S5C6 coefficients (kernel/s5c6_quantized.s, sincos_quantized.s).
 
-  python3 fit/fit_one.py [--table]      (needs numpy; about a minute)
+  python3 fit/fit_quantized.py [--table]      (needs numpy; about a minute)
 
 The constraint: every coefficient except S1 has 8 significant bits (low 16
 bits of the float zero), so it is built with one lui and no data is read.

@@ -46,7 +46,7 @@ VARIANTS = {
     'tabfsk': (5, 0), 'abfsk': (5, 1),       # S5C6, every constant built in code
     'tabfskl': (6, 0), 'abfskl': (6, 1),     # S5C6, four constants loaded from one line
     'talutx': (7, 0), 'alutx': (7, 1),       # LUTX16
-    'taone': (8, 0), 'aone': (8, 1),         # S5C6 one constant: only S1 full precision, no data
+    'taone': (8, 0), 'aone': (8, 1),         # S5C6 quantized: only S1 full precision, no data
     # combined sin+cos at the converted call sites (hsm64-sincos.patch)
     'vanilla-sc': (0, 0), 'asilas-sc': (4, 1), 'abfsk-sc': (5, 1), 'abfskl-sc': (6, 1), 'alutx-sc': (7, 1),
     'aone-sc': (8, 1),
