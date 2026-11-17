@@ -12,31 +12,24 @@ S5C6 is a sine and cosine kernel for the N64 CPU (VR4300). This repository compa
 <!-- gen:summary-table -->
 | | Silas | S5C6 (one cache line) |
 |---|---|---|
-| Max error | 1.92e-4 | **1.45e-5** (13 times smaller) |
-| CPU cycles for one sine and one cosine (exact) | 93.0 | **89.5** |
-| CPU cycles for one sine (exact) | 65.5 | **54.5** |
+| Max error | 1.92e-4 | 1.45e-5 |
+| CPU cycles for one sine and one cosine (exact) | 93.0 | 89.5 |
+| CPU cycles for one sine (exact) | 65.5 | 54.5 |
 | Memory traffic in the game, bytes per frame | 543,393 ± 8,603 | 543,117 ± 7,761 (−276 ± 2,695) |
 | CPU time in the game, µs per frame | 12,303 ± 163 | 12,269 ± 135 (−34 ± 55) |
 <!-- /gen:summary-table -->
 
-In-game values: mean ± 95 % confidence interval. In brackets: difference from Silas.
+Accuracy: exact values over all 65,536 angles (experiment 1). Cycles: exact values from a timing loop (experiment 2). In-game values: mean ± 95 % confidence interval over the samples (experiments 3 and 4). In brackets: difference from Silas.
 
-- S5C6 is 13 times more accurate than Silas.
-- For each call, S5C6 uses fewer CPU cycles than Silas.
-<!-- gen:summary-claim -->
-- In the game, S5C6 has the same memory traffic as Silas and the same or less CPU time: up to 86 µs per frame less (refer to experiment 4).
-- Thus, S5C6 gives 13 times the accuracy for the same or a lower cost.
-<!-- /gen:summary-claim -->
-
-## The question
+## Criteria
 
 This repository compares sine and cosine kernels by three criteria:
 
-1. **Memory traffic.** The bytes that move over the RDRAM bus. The CPU shares this bus with the RCP, so less traffic can make the whole frame faster.
+1. **Memory traffic.** The bytes that the CPU moves over the RDRAM bus. The CPU shares this bus with the RCP.
 2. **Instructions and CPU cycles.**
-3. **Accuracy that is sufficient for gameplay.** A character must walk in a straight line. A sine must not go above 1, because animation bones then grow.
+3. **Accuracy.** The error of the sine and the cosine, and how well the sine and the cosine agree (s² + c² − 1).
 
-The SM64 sine table is not compared here. The baseline is the kernel from Silas Lock: a 4th-order cosine polynomial, with the sine from a square root.
+The baseline is the kernel from Silas Lock: a 4th-order cosine polynomial, with the sine from a square root. The SM64 sine table is not part of the comparison.
 
 Each experiment below measures one of the three criteria:
 
@@ -59,7 +52,7 @@ Each experiment below measures one of the three criteria:
 | s² + c² − 1 | A measure of how well a sine and a cosine agree. A rotation made from them changes lengths by approximately half of this value. |
 | Memory traffic | The bytes that the CPU moves over the RDRAM bus: instruction-cache fills, data-cache fills and write-backs, and uncached accesses. The emulator counts them on the bus. |
 | Sample | One random draw of the test conditions: the positions of code and data in memory, and the random seed of the game. Refer to [Method in the game](#method-in-the-game). |
-| ± | The 95 % confidence interval. If the interval of a difference contains 0, the two values are the same. |
+| ± | The half-width of the 95 % confidence interval of the mean (Student's t). |
 
 ## How S5C6 works
 
@@ -73,7 +66,7 @@ Silas calculates one polynomial. It calculates the other value with a square roo
     C(x) = 1 + x²(a + bx²)
     S(x) = √(1 − C(x)²)
 
-Three design decisions make S5C6 fast:
+Three design decisions reduce the cost of S5C6:
 
 - The nested form above (Horner form) needs only one multiplication and one addition for each coefficient. There is no square root.
 - The coefficients c and f have only 8 significant bits. One `lui` instruction loads each of them.
@@ -97,12 +90,11 @@ There are three versions of S5C6. All versions use the same fold and the same po
 | Max \|s² + c² − 1\| | 1.7e-7 | 1.7e-7 | 4.1e-5 |
 | CPU cycles for one sine and one cosine | 89.5 | 91.5 | 88.5 |
 
-### How to select a version
+### Properties of the versions
 
-- **One cache line** executes the fewest instructions. This is true only while its constant line is in the data cache. If the game removes the line from the cache, the call must wait for RAM.
-- **Pure code** never has a data-cache miss. It uses 24 more bytes of instruction cache.
-- **Quantized** is pure code with 3 fewer instructions. Its coefficients b, d and e are quantized to 8 bits, so this version has its own coefficients ([`fit/fit_quantized.py`](fit/fit_quantized.py)). These coefficients are not fitted jointly, so the maximum of s² + c² − 1 is 240 times larger. This is important only where the code applies a rotation again and again to its own result.
-- **In the game, the three versions have the same cost.**
+- **One cache line** executes the fewest instructions when its constant line is in the data cache. When the line is not in the data cache, the call reads it from RDRAM.
+- **Pure code** reads no data. It uses 24 more bytes of instruction cache than the one-cache-line version.
+- **Quantized** is pure code with 3 fewer instructions. Its coefficients b, d and e are quantized to 8 bits, so this version has its own coefficients ([`fit/fit_quantized.py`](fit/fit_quantized.py)). These coefficients are not fitted jointly. Its maximum of s² + c² − 1 is 240 times that of the other versions.
 
 ## Use
 
@@ -149,12 +141,11 @@ There are three versions of S5C6. All versions use the same fold and the same po
 | \|sin\| and \|cos\| never above 1 | Yes | Yes | Yes |
 | Different sine values in one turn | 32,757 | 32,763 | 32,765 |
 
-- **Criterion 3:** All kernels are exact at the four quarter turns, and no value goes above 1. Thus, no kernel makes bones grow.
-- **Direction error:** The difference between the direction of the (cos, sin) pair and the true angle. For S5C6, it is less than one fifth of an angle step. For Silas, it is 2 angle steps. This error decides if a character walks in the direction that the player holds.
-- **Silas error:** Within 2 steps of 0° and 180°, 1 − c² rounds to 0. Thus, the sine of Silas is exactly 0 at these angles. The largest error of Silas is at these angles.
-- **s² + c² − 1:** Silas and S5C6 are both within approximately 1.5 float32 rounding steps (one step near 1.0 is 1.2e-7). The display-list matrices of the N64 (16.16 fixed point) round rotation values to 1.5e-5. This step is larger than the values of Silas and S5C6.
-- **Drift:** Drift is the mean of s² + c² − 1. Drift is important only for a rotation that the code applies again and again to its own result. Example: at 30 frames per second, with a different angle in each frame, a length increases by 1 % in approximately 4 days with S5C6. With the quantized version, this takes approximately 38 minutes. SM64 and MM make their matrices again from the angle in each frame. Thus, usual objects do not drift.
-- **Symmetry of the quantized version:** Its two polynomials do not meet exactly at 45°. Thus, near ±45°, the last bits of sin(−a) and −sin(a) can be different.
+- **Direction error:** The difference between the direction of the (cos, sin) pair and the true angle, in units of 1/65536 turn.
+- **s² + c² − 1:** A rotation made from a sine s and a cosine c changes lengths by the factor √(s² + c²). One float32 rounding step near 1.0 is 1.2e-7. The display-list matrices of the N64 (16.16 fixed point) round rotation values to steps of 1.5e-5.
+- **Drift:** The mean of s² + c² − 1 over all angles.
+- **Silas at 0° and 180°:** Within 2 steps of 0° and 180°, 1 − c² rounds to 0, and the sine of Silas is exactly 0.
+- **Quantized version at ±45°:** Its two polynomials do not meet exactly at 45°. Near ±45°, the last bits of sin(−a) and −sin(a) can be different.
 
 ## 2. Cost for each call
 
@@ -172,9 +163,6 @@ There are three versions of S5C6. All versions use the same fold and the same po
 | | `trig_sincos` | 200 | 7 | None | 224 | 45 / 47.5 / 50 | 7 | 0 |
 | S5C6 quantized | `trig_sin` | 180 | 6 | None | 192 | 25 / 26.0 / 27 | 4 | 0 |
 | | `trig_sincos` | 188 | 6 | None | 192 | 42 / 44.5 / 47 | 7 | 0 |
-
-- S5C6 executes more instructions than Silas, but it has no `sqrt.s`. On the VR4300, `sqrt.s` takes much longer than one instruction. Thus, S5C6 uses fewer cycles (refer to the next table).
-- S5C6 is larger than Silas. If its code is not in the cache, S5C6 loads 32 to 80 more bytes than Silas.
 
 ### Cycles for each call
 
@@ -194,9 +182,7 @@ A timer in the ROM measures 65,536 calls in [ares](https://ares-emu.net) v148:
 | S5C6 pure code | 54.5 | 54.5 | 110.0 | 91.5 |
 | S5C6 quantized | 53.0 | 53.0 | 107.0 | 88.5 |
 
-- **One sine:** S5C6 uses 11 to 12.5 fewer cycles than Silas.
-- **One sine and one cosine with `trig_sincos`:** S5C6 uses 1.5 to 4.5 fewer cycles than Silas.
-- Experiments 3 and 4 include the cost of cache misses.
+- The loop runs with warm caches. Experiments 3 and 4 include the cost of cache misses.
 
 ## Method in the game
 
@@ -219,9 +205,9 @@ Experiments 3 and 4 use the same runs.
 | Code shift | 0 to 16 KB of padding before the kernel, in 32-byte steps | Instruction-cache collisions (16 KB cache, 32-byte lines) |
 | Data shift | 0 to 8 KB of `.bss` padding, in 16-byte steps | Data-cache collisions of the static data (8 KB cache, 16-byte lines) |
 | Heap shift | 0 to 8 KB added to the start of the main pool, in 16-byte steps | Data-cache collisions of all data that the game allocates at run time |
-| Game seed | 0 to 65,113 steps of the random generator of the game, at boot | The random choices of the objects. The path of Mario stays the same: the demos give the same input. |
+| Game seed | 0 to 65,113 steps of the random generator of the game, at boot | The random choices of the objects. The demos give the same input. |
 
-All four conditions are uniform and independent. Each sample has its own random generator, so the samples are independent.
+All four conditions are uniform and independent. Each sample has its own random generator, so the samples are independent. New samples are added over time. The tables include all finished samples.
 <!-- /gen:method -->
 
 ## 3. Memory traffic in the game
@@ -235,10 +221,6 @@ Bytes per frame that the CPU moves over the RDRAM bus, counted by the emulator o
 | S5C6 one cache line | 543,117 ± 7,761 (−276 ± 2,695) | 552,101 ± 4,619 (+1,687 ± 4,058) |
 | S5C6 pure code | 544,179 ± 7,609 (+786 ± 3,244) | 549,701 ± 3,520 (−713 ± 3,369) |
 | S5C6 quantized | 542,599 ± 7,721 (−795 ± 2,067) | 549,999 ± 3,585 (−415 ± 3,450) |
-
-- **Criterion 1:** S5C6 and Silas have the same memory traffic. Each difference interval contains 0.
-- Each difference interval is 0.7 % of the total traffic or less.
-- Neither kernel reads a table. The kernels differ only in code size: 32 to 80 bytes when the code is not in the cache.
 <!-- /gen:traffic -->
 
 ## 4. CPU time in the game
@@ -252,8 +234,6 @@ Game-thread CPU time from the HackerSM64 profiler, in µs per frame. Audio is no
 | S5C6 one cache line | 12,269 ± 135 (−34 ± 55) | 12,504 ± 106 (−8 ± 81) |
 | S5C6 pure code | 12,278 ± 134 (−25 ± 66) | 12,434 ± 71 (−78 ± 60) |
 | S5C6 quantized | 12,258 ± 143 (−45 ± 44) | 12,425 ± 71 (−86 ± 59) |
-
-- **Criterion 2:** S5C6 pure code with separate calls: 78 µs per frame less than Silas (−78 ± 60). S5C6 quantized with `sincoss()`: 45 µs per frame less than Silas (−45 ± 44). S5C6 quantized with separate calls: 86 µs per frame less than Silas (−86 ± 59). All other differences contain 0: there, S5C6 and Silas have the same CPU time.
 <!-- /gen:cputime -->
 
 ## Checks
