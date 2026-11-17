@@ -96,6 +96,8 @@ static u32 sPrevCalls;
 #define TB_FAMILY "SILAS"
 #elif TRIG_FUNC == 7
 #define TB_FAMILY "LUT16"
+#elif TRIG_FUNC == 8
+#define TB_FAMILY "ONE"
 #else
 #define TB_FAMILY "BFSK"
 #endif
@@ -292,6 +294,72 @@ static void tb_emux_fast(void) {
     asm volatile(".word 0x420000ac" : : : "memory");
 }
 
+#if TRIG_CYCLES
+/* Cycles per call, warm cache, interrupts off. Each form runs over 65536
+ * angles in order and in a pseudo-random order, twice (the second pass is
+ * reported); loops with the same bookkeeping but no trig are timed to
+ * subtract. One line: TRIGCYCLES and ten hex totals in CPU cycles. */
+extern u32 __osDisableInt(void);
+extern void __osRestoreInt(u32);
+volatile f32 gTrigSink;
+volatile u32 gTrigSinkI;
+volatile f32 gTrigOne = 1.0f;
+
+#define TB_N 0x10000
+#define TB_LOOP(OUT, RND, ...)                                                 \
+    do {                                                                       \
+        u32 i_, r_ = 12345, x_ = 0, t0_;                                       \
+        s32 a;                                                                 \
+        f32 acc = 0.0f, acc2 = 0.0f, one = gTrigOne;                           \
+        t0_ = osGetCount();                                                    \
+        for (i_ = 0; i_ < TB_N; i_++) {                                        \
+            r_ = r_ * 0x41C64E6Du + 12345u;                                    \
+            a = (RND) ? (s32) (r_ >> 16) : (s32) i_;                           \
+            x_ ^= (u32) a;                                                     \
+            __VA_ARGS__                                                        \
+        }                                                                      \
+        OUT = (osGetCount() - t0_) * 2;                                        \
+        gTrigSink = acc + acc2;                                                \
+        gTrigSinkI = x_;                                                       \
+        (void) one;                                                            \
+    } while (0)
+
+static void tb_cycles_report(void) {
+    static char line[16 + 10 * 9 + 2];
+    u32 t[10];
+    u32 mask, pass, k;
+    s32 rnd;
+    char *p = line;
+    const char *tag = "TRIGCYCLES";
+
+    mask = __osDisableInt();
+    for (pass = 0; pass < 2; pass++) {
+        for (rnd = 0; rnd < 2; rnd++) {
+            u32 *o = &t[5 * rnd];
+            TB_LOOP(o[0], rnd, acc += one;);
+            TB_LOOP(o[1], rnd, acc += sins(a););
+            TB_LOOP(o[2], rnd, acc += one; acc2 += one;);
+            TB_LOOP(o[3], rnd, acc += sins(a); acc2 += coss(a););
+            TB_LOOP(o[4], rnd, { f32 s_, c_; sincoss(a, s_, c_); acc += s_; acc2 += c_; });
+        }
+    }
+    __osRestoreInt(mask);
+    while (*tag != '\0') {
+        *p++ = *tag++;
+    }
+    for (k = 0; k < 10; k++) {
+        s32 b;
+        *p++ = ' ';
+        for (b = 28; b >= 0; b -= 4) {
+            *p++ = "0123456789abcdef"[(t[k] >> b) & 15];
+        }
+    }
+    *p++ = '\n';
+    *p = '\0';
+    tb_emux_log(line);
+}
+#endif
+
 /* The whole of gTrigBench as one line of hex on ares's terminal, then quit:
  * a runner needs nothing but ares's output (tools: bench/run.py). */
 static void tb_emux_report(void) {
@@ -332,6 +400,9 @@ static void tb_emux_report(void) {
         }
         tb_emux_log(sl);
     }
+#endif
+#if TRIG_CYCLES
+    tb_cycles_report();
 #endif
     tb_emux_log(line);
     tb_emux_exit();

@@ -46,12 +46,14 @@ VARIANTS = {
     'tabfsk': (5, 0), 'abfsk': (5, 1),       # S5C6, every constant built in code
     'tabfskl': (6, 0), 'abfskl': (6, 1),     # S5C6, four constants loaded from one line
     'talutx': (7, 0), 'alutx': (7, 1),       # LUTX16
+    'taone': (8, 0), 'aone': (8, 1),         # S5C6 one constant: only S1 full precision, no data
     # combined sin+cos at the converted call sites (hsm64-sincos.patch)
     'vanilla-sc': (0, 0), 'asilas-sc': (4, 1), 'abfsk-sc': (5, 1), 'abfskl-sc': (6, 1), 'alutx-sc': (7, 1),
+    'aone-sc': (8, 1),
 }
-GROUPS = {'kernels': ['tasilas', 'asilas', 'tabfsk', 'abfsk', 'tabfskl', 'abfskl', 'talutx', 'alutx'],
+GROUPS = {'kernels': ['tasilas', 'asilas', 'tabfsk', 'abfsk', 'tabfskl', 'abfskl', 'talutx', 'alutx', 'taone', 'aone'],
           'c': ['tsilas', 'silas', 'tbfsk', 'bfsk'],
-          'sincos': ['vanilla-sc', 'asilas-sc', 'abfsk-sc', 'abfskl-sc', 'alutx-sc']}
+          'sincos': ['vanilla-sc', 'asilas-sc', 'abfsk-sc', 'abfskl-sc', 'alutx-sc', 'aone-sc']}
 SOURCES = ('trig_impl.c', 'trig_bench.c', 'trig_bench.h', 'trig_kernels.s')
 
 
@@ -108,11 +110,12 @@ def build(tree, variant, args, env):
     if sincos:
         tree = sincos_tree(tree)
     out = (f'build-{variant}' + ('-count' if args.count else '') + ('-hw' if args.hardware else '')
+           + ('-cyc' if args.cycles else '')
            + (f'-pad{args.pad}' if args.pad else ''))
     cmd = [args.make, '-C', tree, 'VERSION=us', f'BUILD_DIR_BASE={out}', 'TRIG_BENCH=1',
            f'TRIG_FUNC={func}', f'TRIG_USE={use}', 'TRIG_QUANT=1', f'TRIG_COUNT={int(args.count)}',
            f'TRIG_PAD={args.pad}', f'TRIG_SINCOS={int(sincos)}',
-           f'TRIG_EMUX={int(not args.hardware)}', f'-j{args.jobs}']
+           f'TRIG_EMUX={int(not args.hardware)}', f'TRIG_CYCLES={int(args.cycles)}', f'-j{args.jobs}']
     if args.clang:
         cmd.insert(3, 'COMPILER=clang')
     log = tree / f'{out}.log'
@@ -133,6 +136,8 @@ def main():
     ap.add_argument('--count', action='store_true', help='count sins/coss calls (timings are then not clean)')
     ap.add_argument('--hardware', action='store_true',
                     help='build for a real N64: no ares-only instructions, results on the title screen only')
+    ap.add_argument('--cycles', action='store_true',
+                    help='also time each trig form per call at the end (ares; own builds, suffix -cyc)')
     ap.add_argument('--pad', type=int, default=0, help='layout control: bytes of padding before trig_sin')
     ap.add_argument('--make', default='gmake' if platform.system() == 'Darwin' else 'make')
     ap.add_argument('--jobs', type=int, default=max(1, (os.cpu_count() or 4) - 2))

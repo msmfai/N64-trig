@@ -41,10 +41,10 @@ DEMO = struct.Struct('>IIQIIIIQQIIII')
 CPU_HZ = 93.75e6
 FRAME_US = 1e6 / 30
 PAIRS = [('tsilas', 'silas'), ('tbfsk', 'bfsk'), ('tasilas', 'asilas'), ('tabfsk', 'abfsk'),
-         ('tabfskl', 'abfskl'), ('talutx', 'alutx')]
-GROUPS = {'kernels': ['tasilas', 'asilas', 'tabfsk', 'abfsk', 'tabfskl', 'abfskl', 'talutx', 'alutx'],
+         ('tabfskl', 'abfskl'), ('talutx', 'alutx'), ('taone', 'aone')]
+GROUPS = {'kernels': ['tasilas', 'asilas', 'tabfsk', 'abfsk', 'tabfskl', 'abfskl', 'talutx', 'alutx', 'taone', 'aone'],
           'c': ['tsilas', 'silas', 'tbfsk', 'bfsk'],
-          'sincos': ['vanilla-sc', 'asilas-sc', 'abfsk-sc', 'abfskl-sc', 'alutx-sc']}
+          'sincos': ['vanilla-sc', 'asilas-sc', 'abfsk-sc', 'abfskl-sc', 'alutx-sc', 'aone-sc']}
 SETTINGS = """Video
   Driver: None
 Audio
@@ -94,11 +94,22 @@ def parse(hexline):
             'demo': demo, 'demos_run': demos_run, 'demos': demos}
 
 
+def cycles_per_call(t):
+    """TRIGCYCLES totals (65536 angles each; in order, then pseudo-random) to cycles per
+    call with the loop's own cost taken out: sin, cos+sin as two calls, one sincos."""
+    n = 65536
+    out = {}
+    for k, order in ((0, 'in_order'), (5, 'random')):
+        e1, sin, e2, pair, sc = t[k:k + 5]
+        out[order] = {'sin': (sin - e1) / n, 'sin_cos_two_calls': (pair - e2) / n, 'sincos': (sc - e2) / n}
+    return out
+
+
 class Run:
     """One ares process for one ROM, read line by line."""
 
     def __init__(self, variant, rom, ares, tmp):
-        self.variant, self.result, self.buf = variant, None, b''
+        self.variant, self.result, self.buf, self.cycles = variant, None, b'', None
         work = Path(tmp) / variant
         (work / 'saves').mkdir(parents=True)
         (work / 'settings.bml').write_text(SETTINGS.format(saves=work / 'saves'))
@@ -113,6 +124,9 @@ class Run:
             line, self.buf = self.buf.split(b'\n', 1)
             if b'TRIGSINCOS ' in line:      # trig_sincos against trig_sin, all 65536 angles
                 print(f"{self.variant}: {line[line.find(b'TRIGSINCOS '):].decode('ascii', 'replace')}", flush=True)
+            j = line.find(b'TRIGCYCLES ')
+            if j >= 0:                     # --cycles builds: ten totals in CPU cycles
+                self.cycles = [int(w, 16) for w in line[j + 11:].decode('ascii', 'replace').split()]
             i = line.find(b'TRIGBENCH ')
             if i < 0:
                 continue
@@ -121,6 +135,8 @@ class Run:
                 print(f'{time.time() - self.start:5.0f}s {self.variant}: demo {int(text[5:]) + 1} of 7', flush=True)
             else:
                 self.result = parse(text)
+                if self.cycles:
+                    self.result['cycles'] = cycles_per_call(self.cycles)
 
     def stop(self):
         if self.proc.poll() is None:
@@ -193,6 +209,13 @@ def report(results):
         cpu, f, calls, audio = total(r)
         extra = f'   {calls / f:.0f} sins+coss calls per frame' if r['counting'] else ''
         print(f'  {v:11}{usec(cpu, f):9.0f}{100 * usec(cpu, f) / FRAME_US:11.1f}%{usec(audio, f):10.0f}{extra}')
+    cyc = {v: r['cycles'] for v, r in results.items() if r and r.get('cycles')}
+    if cyc:
+        print('\nCPU cycles per call, warm cache, interrupts off (ares), loop cost subtracted')
+        print(f"  {'build':13}{'order':10}{'sin':>8}{'sin+cos':>9}{'sincos':>8}")
+        for v, c in cyc.items():
+            for order, x in c.items():
+                print(f"  {v:13}{order:10}{x['sin']:8.1f}{x['sin_cos_two_calls']:9.1f}{x['sincos']:8.1f}")
     for table, call in PAIRS:
         if not results.get(table) or not results.get(call):
             continue

@@ -4,7 +4,7 @@
 # S(x) = x(a + x^2(b + cx^2)), C(x) = 1 + x^2(d + x^2(e + fx^2)), x in +-1/8 turn.
 # c (S5) and f (C6) are built with lui; a, b, d, e are one 16-byte cache line (trig_k).
 # Pure-code version (no data, 6 more instructions): kernel/sincos_code.s.
-# Why both exist: README.md, "Two versions".
+# The three versions: README.md.
 
     .set noreorder
     .set noat

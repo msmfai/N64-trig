@@ -46,33 +46,38 @@ S(x) = √(1 − C(x)²)</pre>
 <tr><th></th><th><a href="#g-s5c6">S5C6</a> <a href="#g-line">line</a></th><th><a href="#g-silas">Silas</a></th></tr>
 <tr><td><a href="#g-error">max error</a></td><td>1.45e-5</td><td>1.9e-4</td></tr>
 <tr><td>max |s² + c² − 1|</td><td>1.7e-7</td><td>7.1e-8</td></tr>
-<tr><td>mean |s² + c² − 1|</td><td>8.9e-10</td><td>1.7e-8</td></tr>
+<tr><td>mean |s² + c² − 1|</td><td>3.7e-8</td><td>1.7e-8</td></tr>
+<tr><td>mean s² + c² − 1 (drift)</td><td>+1.8e-9</td><td>+2.6e-10</td></tr>
 <tr><td>instructions executed per <a href="#g-sincos">sincos</a></td><td>39–44</td><td>35–39 + sqrt</td></tr>
 <tr><td><a href="#g-us">µs/frame</a> saved vs Silas, mean of 3 <a href="#g-layout">layouts</a></td><td>62</td><td>0</td></tr>
 </table></div>
 <ul>
-<li>Kernel: <a href="#k-sincos">below</a>, in two versions (see <a href="#two-versions">the next section</a>): <a href="https://github.com/msmfai/N64-trig/blob/main/kernel/sincos.s">kernel/sincos.s</a> (one cache line) and <a href="https://github.com/msmfai/N64-trig/blob/main/kernel/sincos_code.s">kernel/sincos_code.s</a> (pure code), with the C macro <a href="https://github.com/msmfai/N64-trig/blob/main/kernel/sincos.h">kernel/sincos.h</a>.</li>
+<li>Kernel: <a href="#k-sincos">below</a>, in three versions (see <a href="#two-versions">the next section</a>): <a href="https://github.com/msmfai/N64-trig/blob/main/kernel/sincos.s">kernel/sincos.s</a> (one cache line), <a href="https://github.com/msmfai/N64-trig/blob/main/kernel/sincos_code.s">kernel/sincos_code.s</a> (pure code) and <a href="https://github.com/msmfai/N64-trig/blob/main/kernel/sincos_one.s">kernel/sincos_one.s</a> (one constant), with the C macro <a href="https://github.com/msmfai/N64-trig/blob/main/kernel/sincos.h">kernel/sincos.h</a>.</li>
 <li>Measured in <a href="#g-ares">ares</a> v148 on <a href="#g-hsm64">HackerSM64</a> built with clang 21: 7 attract demos, 4,304 frames, about 440 sin/cos per frame, with 13 functions converted to sincos.</li>
+<li>Full specifications (accuracy, size, cycles per call, in-game speed) for all three versions, Silas and the vanilla table: <a href="https://github.com/msmfai/N64-trig#readme">the README</a>.</li>
 <li>Not tested on a real N64. Help with a console run is appreciated: <code>build.py --hardware</code> makes ROMs that show results on the title screen.</li>
 <li>The rest of this page also compares the game's <a href="#g-table">vanilla table</a> and <a href="#g-lutx16">LUTX16</a>, as separate calls and as sincos.</li>
 </ul>
 
-<h2 id="two-versions">Two versions: one cache line, or pure code</h2>
-<p>The kernel comes in two versions. They use the same polynomial and give bit-identical results. The only difference is where four of the six constants come from.</p>
+<h2 id="two-versions">Three versions: one cache line, pure code, one constant</h2>
+<p>Same fold and polynomials; they differ only in how the six coefficients get into registers. The first two return the same values bit for bit; the third has its own coefficients.</p>
 <div class="scroll"><table>
-<tr><th></th><th><a href="https://github.com/msmfai/N64-trig/blob/main/kernel/sincos.s">sincos.s</a>: one cache line</th><th><a href="https://github.com/msmfai/N64-trig/blob/main/kernel/sincos_code.s">sincos_code.s</a>: pure code</th></tr>
-<tr><td>c, f and 1.0</td><td>one <code>lui</code> each</td><td>one <code>lui</code> each</td></tr>
-<tr><td>a, b, d, e</td><td>read from <code>trig_k</code>, one 16-byte data-cache line</td><td><code>lui</code> + <code>ori</code> each</td></tr>
-<tr><td>data</td><td>16 B, 16-byte aligned</td><td>none</td></tr>
-<tr><td>instructions executed per sincos</td><td>39–44</td><td>45–50</td></tr>
-<tr><td><a href="#g-us">µs/frame</a> saved vs Silas, mean of 3 <a href="#g-layout">layouts</a></td><td>62</td><td>66</td></tr>
+<tr><th></th><th><a href="https://github.com/msmfai/N64-trig/blob/main/kernel/sincos.s">sincos.s</a>: one cache line</th><th><a href="https://github.com/msmfai/N64-trig/blob/main/kernel/sincos_code.s">sincos_code.s</a>: pure code</th><th><a href="https://github.com/msmfai/N64-trig/blob/main/kernel/sincos_one.s">sincos_one.s</a>: one constant</th></tr>
+<tr><td>c, f and 1.0</td><td>one <code>lui</code> each</td><td>one <code>lui</code> each</td><td>one <code>lui</code> each</td></tr>
+<tr><td>a, b, d, e</td><td>read from <code>trig_k</code>, one 16-byte data-cache line</td><td><code>lui</code> + <code>ori</code> each</td><td>b, d, e: <code>lui</code>; a: <code>lui</code> + <code>ori</code></td></tr>
+<tr><td>data</td><td>16 B, 16-byte aligned</td><td>none</td><td>none</td></tr>
+<tr><td><a href="#g-error">max error</a></td><td>1.45e-5</td><td>1.45e-5</td><td>2.3e-5</td></tr>
+<tr><td>max |s² + c² − 1|</td><td>1.7e-7</td><td>1.7e-7</td><td>4.1e-5</td></tr>
+<tr><td>instructions executed per sincos</td><td>39–44</td><td>45–50</td><td>42–47</td></tr>
+<tr><td>cycles per sincos, warm (ares)</td><td>89.5</td><td>91.5</td><td>88.5</td></tr>
+<tr><td><a href="#g-us">µs/frame</a> saved vs Silas, mean of 3 <a href="#g-layout">layouts</a></td><td>62</td><td>66</td><td>73</td></tr>
 </table></div>
-<p>Why there are two:</p>
+<p>Why there are three:</p>
 <ul>
-<li>The cache-line version runs 6 fewer instructions, but only if its line is already in the data cache. If the game has evicted the line, the call waits for RAM (a <a href="#g-miss">cache miss</a>).</li>
-<li>The pure-code version can never miss on data. It costs 24 more bytes of instruction cache instead.</li>
-<li>On <a href="#g-ares">ares</a> the two are tied: the gap is smaller than the ±3% that code layout alone moves results. ares charges a flat cost per miss and doesn't model RAM contention, so it can't say which one wins on a console. That is why both are kept until someone measures on hardware.</li>
-<li>The pure-code version is one self-contained file, with no <code>.rodata</code> to place or align. Use it if that is easier for your build.</li>
+<li>The cache-line version runs the fewest instructions, but only if its line is already in the data cache. If the game has evicted the line, the call waits for RAM (a <a href="#g-miss">cache miss</a>).</li>
+<li>The pure-code version can never miss on data. It costs 24 more bytes of instruction cache instead, and is one self-contained file with no <code>.rodata</code> to place or align.</li>
+<li>The one-constant version is pure code with only one <code>lui</code> + <code>ori</code> pair: 3 instructions shorter than the pure-code version. The price is accuracy: its s² + c² − 1 is 240x larger, which matters only where a rotation is applied again and again to its own result.</li>
+<li>On <a href="#g-ares">ares</a> the three are tied: the gaps are smaller than the ±3% that code layout alone moves results. ares charges a flat cost per miss and doesn't model RAM contention, so it can't say which one wins on a console.</li>
 </ul>
 
 <h2>Accuracy and size</h2>
@@ -81,7 +86,8 @@ S(x) = √(1 − C(x)²)</pre>
 <tr><td><a href="#g-table">vanilla table</a></td><td>1.4e-3</td><td>20 KB</td><td>~4 inline</td><td>~4</td><td>~8</td></tr>
 <tr><td><a href="#g-s5c6">S5C6</a> <a href="#g-line">line</a></td><td>1.45e-5</td><td>16 B</td><td>42 / 44</td><td>24–27</td><td>39–44</td></tr>
 <tr><td><a href="#g-s5c6">S5C6</a> <a href="#g-code">code</a></td><td>1.45e-5</td><td>0</td><td>48 / 50</td><td>26–29</td><td>45–50</td></tr>
-<tr><td><a href="#g-silas">Silas</a></td><td>1.9e-4</td><td>0</td><td>30 / 40</td><td>25–28 + sqrt</td><td>35–39 + sqrt</td></tr>
+<tr><td><a href="#g-s5c6">S5C6</a> one constant</td><td>2.3e-5</td><td>0</td><td>45 / 47</td><td>25–27</td><td>42–47</td></tr>
+<tr><td><a href="#g-silas">Silas</a></td><td>1.9e-4</td><td>0</td><td>30 / 39</td><td>25–28 + sqrt</td><td>35–39 + sqrt</td></tr>
 <tr><td><a href="#g-lutx16">LUTX16</a></td><td>6.4e-7</td><td>544 B</td><td>49 / 54</td><td>34–35</td><td>48–54</td></tr>
 </table></div>
 <ul>
@@ -93,13 +99,13 @@ S(x) = √(1 − C(x)²)</pre>
 <caption>Separate calls: game-thread µs/frame against the table</caption>
 <tr><th></th><th>layout 0</th><th>1024</th><th>4096</th><th>mean</th></tr>
 <tr><td><a href="#g-table">vanilla table</a> (µs/frame)</td><td>12,433</td><td>12,471</td><td>11,967</td><td>0</td></tr>
-<tr><td><a href="#g-s5c6">S5C6</a> <a href="#g-line">line</a></td><td>+253</td><td>−325</td><td>+303</td><td>+77</td></tr><tr><td><a href="#g-s5c6">S5C6</a> <a href="#g-code">code</a></td><td>+273</td><td>−319</td><td>+321</td><td>+92</td></tr><tr><td><a href="#g-silas">Silas</a></td><td>+81</td><td>−257</td><td>+400</td><td>+75</td></tr><tr><td><a href="#g-lutx16">LUTX16</a></td><td>+329</td><td>−276</td><td>+357</td><td>+137</td></tr>
+<tr><td><a href="#g-s5c6">S5C6</a> <a href="#g-line">line</a></td><td>+253</td><td>−325</td><td>+303</td><td>+77</td></tr><tr><td><a href="#g-s5c6">S5C6</a> <a href="#g-code">code</a></td><td>+273</td><td>−319</td><td>+321</td><td>+92</td></tr><tr><td><a href="#g-s5c6">S5C6</a> one constant</td><td>+261</td><td>−328</td><td>+310</td><td>+81</td></tr><tr><td><a href="#g-silas">Silas</a></td><td>+81</td><td>−257</td><td>+400</td><td>+75</td></tr><tr><td><a href="#g-lutx16">LUTX16</a></td><td>+329</td><td>−276</td><td>+357</td><td>+137</td></tr>
 </table></div>
 <div class="scroll"><table>
 <caption>Combined sincos at the converted call sites: µs/frame against the table built from the same source</caption>
 <tr><th></th><th>layout 0</th><th>1024</th><th>4096</th><th>mean</th></tr>
 <tr><td><a href="#g-table">vanilla table</a> (µs/frame)</td><td>12,436</td><td>12,471</td><td>11,967</td><td>0</td></tr>
-<tr><td><a href="#g-s5c6">S5C6</a> <a href="#g-line">line</a></td><td>−322</td><td>−288</td><td>+396</td><td>−71</td></tr><tr><td><a href="#g-s5c6">S5C6</a> <a href="#g-code">code</a></td><td>−297</td><td>−285</td><td>+356</td><td>−75</td></tr><tr><td><a href="#g-silas">Silas</a></td><td>−276</td><td>−213</td><td>+461</td><td>−9</td></tr><tr><td><a href="#g-lutx16">LUTX16</a></td><td>−289</td><td>−214</td><td>+377</td><td>−42</td></tr>
+<tr><td><a href="#g-s5c6">S5C6</a> <a href="#g-line">line</a></td><td>−322</td><td>−288</td><td>+396</td><td>−71</td></tr><tr><td><a href="#g-s5c6">S5C6</a> <a href="#g-code">code</a></td><td>−297</td><td>−285</td><td>+356</td><td>−75</td></tr><tr><td><a href="#g-s5c6">S5C6</a> one constant</td><td>−331</td><td>−290</td><td>+374</td><td>−83</td></tr><tr><td><a href="#g-silas">Silas</a></td><td>−276</td><td>−213</td><td>+461</td><td>−9</td></tr><tr><td><a href="#g-lutx16">LUTX16</a></td><td>−289</td><td>−214</td><td>+377</td><td>−42</td></tr>
 </table></div>
 <div class="scroll"><table>
 <caption>Where the difference comes from, µs/frame against the table, mean of the 3 layouts</caption>
@@ -109,7 +115,7 @@ S(x) = √(1 − C(x)²)</pre>
 <div class="scroll"><table>
 <caption>S5C6 against Silas, both combined: µs/frame saved</caption>
 <tr><th></th><th>layout 0</th><th>1024</th><th>4096</th><th>mean</th></tr>
-<tr><td><a href="#g-s5c6">S5C6</a> <a href="#g-line">line</a></td><td>46</td><td>75</td><td>66</td><td>62</td></tr><tr><td><a href="#g-s5c6">S5C6</a> <a href="#g-code">code</a></td><td>21</td><td>72</td><td>105</td><td>66</td></tr>
+<tr><td><a href="#g-s5c6">S5C6</a> <a href="#g-line">line</a></td><td>46</td><td>75</td><td>66</td><td>62</td></tr><tr><td><a href="#g-s5c6">S5C6</a> <a href="#g-code">code</a></td><td>21</td><td>72</td><td>105</td><td>66</td></tr><tr><td><a href="#g-s5c6">S5C6</a> one constant</td><td>55</td><td>77</td><td>88</td><td>73</td></tr>
 </table></div>
 <ul>
 <li>Work: CPU time without <a href="#g-miss">cache misses</a>, at ares's flat miss cost. Calls cost more work than the table at every layout; they make fewer cache misses at most layouts.</li>
