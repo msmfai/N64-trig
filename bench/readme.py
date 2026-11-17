@@ -21,16 +21,20 @@ MIN_SAMPLES = 8
 SEP = ' | `sincoss()` at the 13 changed call sites | Separate `sins()` and `coss()` calls |\n|---|---|---|\n'
 
 
-METHOD_HEAD = (
+METHOD_HEAD = (  # .format(emulator=...)
     '| Item | Value |\n|---|---|\n'
     '| Game | [HackerSM64](https://github.com/HackerN64/HackerSM64), commit 3be00d2f, clang 21, `-Os` |\n'
-    '| Emulator | ares v148 |\n'
+    '| Emulator | {emulator} |\n'
     '| Input | The seven attract-mode demos of SM64: 4,304 measured frames, with approximately 456 sine and '
     'cosine calls per frame |\n'
     '| Builds | Two for each kernel. **`sincoss()`:** [`bench/hsm64-sincos.patch`](bench/hsm64-sincos.patch) '
     'changes 13 functions to get the sine and the cosine of one angle from one `trig_sincos` call. These 13 '
     'functions make 98 % of the sine and cosine pairs. **Separate calls:** the game calls `sins()` and '
     '`coss()`, and each is one `trig_sin` call. |\n')
+
+
+EMU_SAMPLES = ('[Ares 64](https://github.com/HailToDodongo/ares-64) (commit b4ead632f), headless, CPU interpreter: '
+               'it fetches every instruction through the modelled caches ([`bench/ares64.js`](bench/ares64.js))')
 
 
 def dataset():
@@ -90,7 +94,7 @@ def blocks():
     else:
         g['summary-claim'] = ('- In the game: refer to experiments 3 and 4 for the differences.\n')
     if sampled:
-        g['method'] = METHOD_HEAD + (
+        g['method'] = METHOD_HEAD.format(emulator=EMU_SAMPLES) + (
             f'| Test conditions | {n} samples. Each sample is one random draw of the four conditions below '
             '([`bench/sample.py`](bench/sample.py)). All builds of a sample use the same draw. |\n'
             f'| Result | The mean of the {n} samples ± the 95 % confidence interval (Student\'s t). In brackets: '
@@ -110,7 +114,7 @@ def blocks():
             'All four conditions are uniform and independent. Each sample has its own random generator, so the '
             'samples are independent.\n')
     else:
-        g['method'] = METHOD_HEAD + (
+        g['method'] = METHOD_HEAD.format(emulator='ares v148') + (
             f'| Code shifts | Each build is made {n} times, with 0 to 15 KB of padding before the kernel, in 1 KB '
             'steps |\n'
             f'| Result | The mean of the {n} code shifts ± the 95 % confidence interval (Student\'s t). In '

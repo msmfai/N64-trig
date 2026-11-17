@@ -25,11 +25,12 @@ to check that the build has the switches of the sample.
 
 Stop and continue at any time. Nothing that has finished is lost:
   work/roms/sNNN/VARIANT.z64     a checked ROM is kept and not built again
-  work/partial/sNNN/VARIANT.json the result of each ROM, written when it finishes
+  work/partial/BUILD/EMULATOR/sNNN/VARIANT.json  the result of each ROM, written when it finishes
   bench/results/samples/sNNN.json written when all 8 results of the sample exist
 All files are written to a temporary name and then renamed.
 """
 import argparse
+import hashlib
 import json
 import os
 import random
@@ -43,6 +44,7 @@ import build as B
 import run as R
 
 HERE = Path(__file__).resolve().parent
+BUILD = None
 REPO = HERE.parent
 OUT = HERE / 'results' / 'samples'
 ROMS = REPO / 'work' / 'roms'
@@ -50,6 +52,28 @@ PARTIAL = REPO / 'work' / 'partial'
 VARIANTS = ['asilas', 'abfskl', 'abfsk', 'aone', 'asilas-sc', 'abfskl-sc', 'abfsk-sc', 'aone-sc']
 RNG_PERIOD = 65114                       # period of SM64's random_u16
 SAMPLE_FILES = ('src/game/trig_impl.c', 'src/game/trig_bench.c', 'src/boot/main.c')
+
+
+def build_id():
+    """Fingerprint of everything a benchmark ROM is built from in this repository."""
+    h = hashlib.sha256()
+    for f in sorted(list(HERE.glob('trig_*')) + list(HERE.glob('*.patch')) + [HERE / 'sincos_inline.h',
+                                                                         REPO / 'fit' / 'coeffs.h']):
+        h.update(f.name.encode() + f.read_bytes())
+    return h.hexdigest()[:12]
+
+
+def emulator(ares):
+    """Name of the emulator: Ares 64 (ares-test) with its git commit, or the ares app."""
+    p = Path(ares).resolve()
+    if p.name == 'ares-test':
+        for d in p.parents:
+            if (d / '.git').exists():
+                rev = subprocess.run(['git', '-C', str(d), 'rev-parse', '--short', 'HEAD'],
+                                     capture_output=True, text=True).stdout.strip()
+                return f'ares-64 {rev} interpreter'
+        return 'ares-64 interpreter'
+    return str(p)
 
 
 def draw(seed, i):
@@ -99,7 +123,7 @@ def build_checked(tree, v, args, env, z, dest):
     tmp = dest.with_name(dest.name + '.tmp')
     shutil.copy2(rom, tmp)
     os.replace(tmp, dest)
-    write_atomic(dest.with_suffix('.ok'), json.dumps(z))
+    write_atomic(dest.with_suffix('.ok'), json.dumps({'z': z, 'build': BUILD}))
 
 
 def main():
@@ -111,6 +135,11 @@ def main():
     ap.add_argument('--run-jobs', type=int, default=4, help='ares processes for each sample')
     ap.add_argument('--parallel', type=int, default=3, help='samples run at the same time')
     args = ap.parse_args()
+    global BUILD
+    BUILD = build_id()
+    emu = emulator(args.ares)
+    part_root = PARTIAL / BUILD / emu.replace(' ', '_')
+    print(f'build {BUILD}, emulator {emu}', flush=True)
     sampler_seed = args.seed
     todo = [i for i in range(args.samples) if not (OUT / f's{i:03d}.json').exists()]
     print(f'{args.samples} samples (sampler seed {sampler_seed}), {len(todo)} still to run', flush=True)
@@ -120,12 +149,12 @@ def main():
     threads = []
 
     def finish(i, z):
-        part = PARTIAL / f's{i:03d}'
+        part = part_root / f's{i:03d}'
         res = {v: json.loads((part / f'{v}.json').read_text()) for v in VARIANTS
                if (part / f'{v}.json').exists()}
         if len(res) == len(VARIANTS):
-            write_atomic(OUT / f's{i:03d}.json', json.dumps({'z': z, 'sampler_seed': sampler_seed,
-                                                              'results': res}, indent=1))
+            write_atomic(OUT / f's{i:03d}.json', json.dumps({'z': z, 'sampler_seed': sampler_seed, 'build': BUILD,
+                                                              'emulator': emu, 'results': res}, indent=1))
             print(f'sample {i}: done {z}', flush=True)
         else:
             print(f'sample {i}: {len(res)} of {len(VARIANTS)} results, continues on the next start', flush=True)
@@ -134,7 +163,7 @@ def main():
         try:
             def save(v, result):
                 if result:
-                    write_atomic(PARTIAL / f's{i:03d}' / f'{v}.json', json.dumps(result))
+                    write_atomic(part_root / f's{i:03d}' / f'{v}.json', json.dumps(result))
             if roms:
                 R.run_all(roms, args.ares, args.run_jobs, 1800, on_result=save)
             finish(i, z)
@@ -147,11 +176,11 @@ def main():
         gate.acquire()
         roms = {}
         for v in VARIANTS:
-            if (PARTIAL / f's{i:03d}' / f'{v}.json').exists():
+            if (part_root / f's{i:03d}' / f'{v}.json').exists():
                 continue
             dest = ROMS / f's{i:03d}' / f'{v}.z64'
             ok = dest.with_suffix('.ok')
-            if not (dest.exists() and ok.exists() and json.loads(ok.read_text()) == z):
+            if not (dest.exists() and ok.exists() and json.loads(ok.read_text()) == {'z': z, 'build': BUILD}):
                 build_checked(tree, v, args, env, z, dest)
             roms[v] = dest
         t = threading.Thread(target=run, args=(i, z, roms))

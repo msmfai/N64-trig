@@ -21,10 +21,11 @@ these differences with its 95 % confidence interval (Student's t). If the
 interval contains 0, the difference cannot be told apart from code-position
 chance.
 
-Memory traffic: the bytes that cache misses move over the RDRAM bus. A
-data-cache miss reads one 16-byte line, a write-back writes one 16-byte line,
-an instruction-cache miss reads one 32-byte line (VR4300). The counts are
-ares's counters for the whole machine.
+Memory traffic: the bytes that the CPU moves over the RDRAM bus. With Ares 64
+the emulator counts them on the bus, by device (instruction cache, data cache,
+uncached). With ares v148 they come from the cache-miss counts: a data-cache
+miss reads one 16-byte line, a write-back writes one 16-byte line, an
+instruction-cache miss reads one 32-byte line (VR4300); the two agree exactly.
 """
 import json
 import math
@@ -72,9 +73,14 @@ def per_frame(r):
     m = {'us': sum(x['cycles'] - x['preempted'] for x in d) / f / CPU_HZ * 1e6,
          'd': sum(x['d_misses'] for x in d) / f, 'w': sum(x['d_writes'] for x in d) / f,
          'i': sum(x['i_misses'] for x in d) / f}
-    m['bytes'] = sum(LINE[k] * m[k] for k in LINE)
-    m['dbytes'] = LINE['d'] * m['d'] + LINE['w'] * m['w']
-    m['ibytes'] = LINE['i'] * m['i']
+    if d and d[0].get('bus_icache'):          # Ares 64: bytes counted on the RDRAM bus, by device
+        bus = {k: sum(x[k] for x in d) / f for k in ('bus_icache', 'bus_dcache', 'bus_uncached', 'bus_sp_dma')}
+        m['ibytes'], m['dbytes'] = bus['bus_icache'], bus['bus_dcache'] + bus['bus_uncached']
+        m['rsp'] = bus['bus_sp_dma']
+    else:                                      # ares v148: bytes from the cache-miss counts
+        m['dbytes'] = LINE['d'] * m['d'] + LINE['w'] * m['w']
+        m['ibytes'] = LINE['i'] * m['i']
+    m['bytes'] = m['dbytes'] + m['ibytes']
     return m
 
 
