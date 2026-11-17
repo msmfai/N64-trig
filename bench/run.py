@@ -152,7 +152,8 @@ class Run:
         self.log.close()
 
 
-def run_all(roms, ares, jobs, timeout):
+def run_all(roms, ares, jobs, timeout, on_result=None):
+    """Run the ROMs; on_result(variant, result) is called as each one finishes."""
     results = {}
     pending = list(roms.items())
     with tempfile.TemporaryDirectory(prefix='trigbench-') as tmp:
@@ -174,6 +175,8 @@ def run_all(roms, ares, jobs, timeout):
                     sel.unregister(r.proc.stdout)
                     r.stop()
                     results[r.variant] = r.result
+                    if on_result:
+                        on_result(r.variant, r.result)
                     if r.result is None:
                         print(f'{r.variant}: ares exited without results (see its log in the temp dir)')
                     del active[r.variant]

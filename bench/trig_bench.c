@@ -113,7 +113,25 @@ static u32 sPrevCalls;
 extern const char gTrigPad[];
 #endif
 
+/* The sample switches of this build (bench/sample.py reads them from the ELF
+ * to check that the build used them). */
+#ifndef TRIG_PAD
+#define TRIG_PAD 0
+#endif
+#ifndef TRIG_DPAD
+#define TRIG_DPAD 0
+#endif
+#ifndef TRIG_HEAPPAD
+#define TRIG_HEAPPAD 0
+#endif
+#ifndef TRIG_SEED
+#define TRIG_SEED 0
+#endif
+const u32 gTrigConfig[4] __attribute__((used)) = { TRIG_PAD, TRIG_DPAD, TRIG_HEAPPAD, TRIG_SEED };
+
 void trig_bench_init(void) {
+    /* Referencing gTrigConfig keeps the linker from discarding it. */
+    (void) *(volatile const u32 *) gTrigConfig;
 #if defined(__GNUC__) && defined(TRIG_PAD) && TRIG_PAD > 0
     /* Referencing the layout padding keeps the linker from discarding it. */
     gTrigBench.pad = (u32) (uintptr_t) gTrigPad;

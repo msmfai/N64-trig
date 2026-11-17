@@ -15,16 +15,27 @@ use the same z, so S5C6 and Silas are compared under the same conditions.
   game seed    TRIG_SEED     0 to 65,113 steps                the random choices of the game objects
 
 Each factor is uniform and independent. Sample i uses its own random
-generator (seed, i), so the samples are independent and a run can be
-extended or continued: a sample with a results file is skipped.
+generator (seed, i), so the samples are independent and the run can be
+extended with more samples.
 
-Each variant reuses one build directory (build-VARIANT-sample), so the disk
-holds 8 build trees and the ROMs (8 MB each, work/roms/sNNN/).
+Each variant reuses one build directory (build-VARIANT-sample). make does
+not see a change of the sample switches, so the script touches the files
+that use them before each build, and then reads gTrigConfig from the ELF
+to check that the build has the switches of the sample.
+
+Stop and continue at any time. Nothing that has finished is lost:
+  work/roms/sNNN/VARIANT.z64     a checked ROM is kept and not built again
+  work/partial/sNNN/VARIANT.json the result of each ROM, written when it finishes
+  bench/results/samples/sNNN.json written when all 8 results of the sample exist
+All files are written to a temporary name and then renamed.
 """
 import argparse
 import json
+import os
 import random
+import re
 import shutil
+import subprocess
 import threading
 from pathlib import Path
 
@@ -34,14 +45,61 @@ import run as R
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parent
 OUT = HERE / 'results' / 'samples'
+ROMS = REPO / 'work' / 'roms'
+PARTIAL = REPO / 'work' / 'partial'
 VARIANTS = ['asilas', 'abfskl', 'abfsk', 'aone', 'asilas-sc', 'abfskl-sc', 'abfsk-sc', 'aone-sc']
 RNG_PERIOD = 65114                       # period of SM64's random_u16
+SAMPLE_FILES = ('src/game/trig_impl.c', 'src/game/trig_bench.c', 'src/boot/main.c')
 
 
 def draw(seed, i):
     r = random.Random(f'{seed}-{i}')
     return {'pad': 32 * r.randrange(512), 'dpad': 16 * r.randrange(512),
             'heappad': 16 * r.randrange(512), 'seed': r.randrange(RNG_PERIOD)}
+
+
+def write_atomic(path, text):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_name(path.name + '.tmp')
+    tmp.write_text(text)
+    os.replace(tmp, path)
+
+
+def tool(binutils, name):
+    return str(Path(binutils) / f'mips-linux-gnu-{name}') if binutils else f'mips-linux-gnu-{name}'
+
+
+def config_in_elf(elf, binutils):
+    """The 4 words of gTrigConfig in the ELF: pad, dpad, heappad, seed."""
+    syms = subprocess.run([tool(binutils, 'objdump'), '-t', str(elf)], capture_output=True, text=True).stdout
+    m = re.search(r'^([0-9a-f]+)\s.*\s(\S+)\s+[0-9a-f]+\s+gTrigConfig$', syms, re.M)
+    if not m:
+        raise SystemExit(f'{elf}: no gTrigConfig')
+    addr, sec = int(m.group(1), 16), m.group(2)
+    dump = subprocess.run([tool(binutils, 'objdump'), '-s', '-j', sec, f'--start-address={addr}',
+                           f'--stop-address={addr + 16}', str(elf)], capture_output=True, text=True).stdout
+    words = []
+    for line in dump.splitlines():
+        f = line.split()
+        if f and re.fullmatch(r'[0-9a-f]{8}', f[0]) and int(f[0], 16) >= addr - 15:
+            words += [int(w, 16) for w in f[1:5] if re.fullmatch(r'[0-9a-f]{8}', w)]
+    return words[:4]
+
+
+def build_checked(tree, v, args, env, z, dest):
+    t = B.sincos_tree(tree) if B.is_sincos(v) else tree
+    for f in SAMPLE_FILES:
+        (t / f).touch()
+    rom = B.build(tree, v, args, env)
+    got = config_in_elf(rom.with_name('sm64.elf'), args.binutils)
+    want = [z['pad'], z['dpad'], z['heappad'], z['seed']]
+    if got != want:
+        raise SystemExit(f'{v}: the build has switches {got}, the sample wants {want}')
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    tmp = dest.with_name(dest.name + '.tmp')
+    shutil.copy2(rom, tmp)
+    os.replace(tmp, dest)
+    write_atomic(dest.with_suffix('.ok'), json.dumps(z))
 
 
 def main():
@@ -55,22 +113,31 @@ def main():
     args = ap.parse_args()
     sampler_seed = args.seed
     todo = [i for i in range(args.samples) if not (OUT / f's{i:03d}.json').exists()]
-    print(f'{args.samples} samples (sampler seed {sampler_seed}), {len(todo)} still to run')
-    OUT.mkdir(parents=True, exist_ok=True)
+    print(f'{args.samples} samples (sampler seed {sampler_seed}), {len(todo)} still to run', flush=True)
     args.slot = 'sample'
     tree, env = B.setup(args, VARIANTS)
     gate = threading.Semaphore(args.parallel)
     threads = []
 
+    def finish(i, z):
+        part = PARTIAL / f's{i:03d}'
+        res = {v: json.loads((part / f'{v}.json').read_text()) for v in VARIANTS
+               if (part / f'{v}.json').exists()}
+        if len(res) == len(VARIANTS):
+            write_atomic(OUT / f's{i:03d}.json', json.dumps({'z': z, 'sampler_seed': sampler_seed,
+                                                              'results': res}, indent=1))
+            print(f'sample {i}: done {z}', flush=True)
+        else:
+            print(f'sample {i}: {len(res)} of {len(VARIANTS)} results, continues on the next start', flush=True)
+
     def run(i, z, roms):
         try:
-            res = R.run_all(roms, args.ares, args.run_jobs, 1800)
-            if all(res.get(v) for v in VARIANTS):
-                (OUT / f's{i:03d}.json').write_text(json.dumps({'z': z, 'sampler_seed': sampler_seed,
-                                                                 'results': res}, indent=1))
-                print(f'sample {i}: done {z}', flush=True)
-            else:
-                print(f'sample {i}: incomplete, not saved {z}', flush=True)
+            def save(v, result):
+                if result:
+                    write_atomic(PARTIAL / f's{i:03d}' / f'{v}.json', json.dumps(result))
+            if roms:
+                R.run_all(roms, args.ares, args.run_jobs, 1800, on_result=save)
+            finish(i, z)
         finally:
             gate.release()
 
@@ -80,10 +147,12 @@ def main():
         gate.acquire()
         roms = {}
         for v in VARIANTS:
-            rom = B.build(tree, v, args, env)
-            dest = REPO / 'work' / 'roms' / f's{i:03d}' / f'{v}.z64'
-            dest.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copy2(rom, dest)
+            if (PARTIAL / f's{i:03d}' / f'{v}.json').exists():
+                continue
+            dest = ROMS / f's{i:03d}' / f'{v}.z64'
+            ok = dest.with_suffix('.ok')
+            if not (dest.exists() and ok.exists() and json.loads(ok.read_text()) == z):
+                build_checked(tree, v, args, env, z, dest)
             roms[v] = dest
         t = threading.Thread(target=run, args=(i, z, roms))
         t.start()
