@@ -30,7 +30,7 @@ HAND = {  # name: (source, preprocessor defines or None, trig_k words)
     'S5C6_code': (REPO / 'kernel/s5c6_code.s', None, []),
     'S5C6_quantized': (REPO / 'kernel/s5c6_quantized.s', None, []),
     'S5C4_line': (REPO / 'kernel/s5c4_line.s', None, [0x38c907e2, 0xaa2449da, 0xb19ddd5a, 0x3f800000]),
-    'S5C4_code': (REPO / 'kernel/s5c4_code.s', None, []),
+    'S5C4_pure': (REPO / 'kernel/s5c4_code.s', None, []),     # shared-tail sin (124 B); S5C4_code was the 152 B sin
     'S5C4_shared': (REPO / 'kernel/s5c4_shared.s', None, [0x38c907e2, 0xaa2449da, 0xb19ddd5a, 0x3f800000]),
 }
 
@@ -73,7 +73,10 @@ def kernel_source(kernel, work, clang):
 
 
 def slot_image(kernel, slot_addr, binutils, clang):
+    """KERNEL+shared: only the kernel's trig_sincos; a single sin or cos call runs it and uses $f0."""
     tool = lambda n: Path(binutils) / f'mips-linux-gnu-{n}'
+    force_shared = kernel.endswith('+shared')
+    kernel = kernel.removesuffix('+shared')
     with tempfile.TemporaryDirectory() as tmp:
         work = Path(tmp)
         src, words = kernel_source(kernel, work, clang)
@@ -87,6 +90,8 @@ def slot_image(kernel, slot_addr, binutils, clang):
                 syms[f[3]] = (int(f[0], 16), int(f[1], 16))
         run([tool('objcopy'), '-O', 'binary', '-j', '.text', work / 'k.elf', work / 'k.bin'])
         text = (work / 'k.bin').read_bytes()
+    if force_shared:
+        syms['trig_sin'] = syms['trig_sincos']
     img = bytearray(SIZE)
     shared = syms['trig_sin'][0] == syms['trig_sincos'][0]
     if shared:                               # one function for both: trig_sin branches to trig_sincos

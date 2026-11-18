@@ -20,7 +20,7 @@ BRANCH = re.compile(r'^(b|bal|beq|bne|beqz|bnez|bgez|bgtz|blez|bltz|bc1[tf]|j|ja
 
 
 def check(path, binutils):
-    out = subprocess.run([str(Path(binutils) / 'mips-linux-gnu-objdump'), '-d', '-M', 'no-aliases', str(path)],
+    out = subprocess.run([str(Path(binutils) / 'mips-linux-gnu-objdump'), '-d', '-z', '-M', 'no-aliases', str(path)],
                          capture_output=True, text=True, check=True).stdout
     found, fn, prev = [], None, None
     for line in out.splitlines():

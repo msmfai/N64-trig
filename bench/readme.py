@@ -14,6 +14,9 @@ import re
 import sys
 from pathlib import Path
 
+import json
+
+import fair as FAIR
 import summary as S
 
 HERE = Path(__file__).resolve().parent
@@ -54,6 +57,33 @@ def table(data, ids, key):
     return '|' + SEP + rows
 
 
+def summary():
+    """Silas and the two S5C4 versions with two functions: accuracy, cost per call (fit/frontier.json,
+    from bench/frontier.py), and the in-game paired differences (bench/fair.py)."""
+    fr = {r['name']: r for r in json.loads((HERE.parent / 'fit/frontier.json').read_text())}
+    ks = [('Silas', 'Silas'), ('S5C4 pure code', 'S5C4_pure'), ('S5C4 one cache line', 'S5C4_line')]
+    runs = {run: FAIR.load(run) for run, _ in FAIR.RUNS}
+    out = '| | ' + ' | '.join(n for n, _ in ks) + ' |\n|---|' + '---|' * len(ks) + '\n'
+    for lab, key, f in [('Max error', 'max error', '{:.2e}'),
+                        ('Max direction error (1/65536 turn)', 'direction error', '{:.2f}'),
+                        ('Creep: max \\|s²+c²−1\\|, turns of 0° to 6°', 'creep |U|', '{:.1e}'),
+                        ('Max \\|s²+c²−1\\|', 'max |U|', '{:.1e}'),
+                        ('CPU cycles for one `trig_sincos` call', 'sincos cycles', '{:.1f}'),
+                        ('CPU cycles for one `trig_sin` call', 'sin cycles', '{:.1f}')]:
+        out += f'| {lab} | ' + ' | '.join(f.format(fr[n][key]) for n, _ in ks) + ' |\n'
+    out += '| Code (cache lines) and data | ' + ' | '.join(
+        FAIR.size_cell(runs['hand-sincos'][1], k) for _, k in ks) + ' |\n'
+    for run, rlab in FAIR.RUNS:
+        for key, unit in (('us', 'CPU time in the game, µs per frame'),
+                          ('bytes', 'Memory traffic in the game, bytes per frame')):
+            cells = []
+            for _, k in ks:
+                m, d = FAIR.stats(runs[run][0], k, 'Silas', key)
+                cells.append(f'{m[0]:,.0f} ± {m[1]:,.0f}' + (f' ({S.fmt(*d)})' if d else ''))
+            out += f'| {unit}, {rlab[0].lower() + rlab[1:]} | ' + ' | '.join(cells) + ' |\n'
+    return out
+
+
 def blocks():
     data, ids, sampled = dataset()
     n = len(ids)
@@ -62,15 +92,9 @@ def blocks():
     us = S.mean_ci([S.per_frame(data[i][S.BASE[2]])['us'] for i in ids])
     k = S.KERNELS[0]
     g = {}
-    g['summary-table'] = (
-        '| | Silas | S5C6 (one cache line) |\n|---|---|---|\n'
-        '| Max error | 1.92e-4 | 1.45e-5 |\n'
-        '| CPU cycles for one sine and one cosine (exact) | 93.0 | 89.5 |\n'
-        '| CPU cycles for one sine (exact) | 65.5 | 54.5 |\n'
-        f'| Memory traffic in the game, bytes per frame | {by[0]:,.0f} ± {by[1]:,.0f} | '
-        f'{S.cell(data, ids, k[2], S.BASE[2], "bytes")} |\n'
-        f'| CPU time in the game, µs per frame | {us[0]:,.0f} ± {us[1]:,.0f} | '
-        f'{S.cell(data, ids, k[2], S.BASE[2], "us")} |\n')
+    g['summary-table'] = summary()
+    nfair, fair_blocks = FAIR.tables()
+    g['fair'] = f'{nfair} samples.\n\n' + '\n'.join(fair_blocks)
     if sampled:
         g['method'] = METHOD_HEAD.format(emulator=EMU_SAMPLES) + (
             f'| Test conditions | {n} samples. Each sample is one random draw of the four conditions below '

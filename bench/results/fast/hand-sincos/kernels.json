@@ -30,5 +30,21 @@
   },
   "data bytes": 16,
   "slot": "0x801ae8e0"
+ },
+ "S5C4_pure": {
+  "code bytes": {
+   "trig_sincos": 168,
+   "trig_sin": 124
+  },
+  "data bytes": 0,
+  "slot": "0x801ae8e0"
+ },
+ "Silas+shared": {
+  "code bytes": {
+   "trig_sincos": 156,
+   "trig_sin": 0
+  },
+  "data bytes": 0,
+  "slot": "0x801ae8e0"
  }
 }

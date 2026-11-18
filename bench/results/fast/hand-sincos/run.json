@@ -2,7 +2,8 @@
  "kernels": [
   "Silas",
   "S5C4_line",
-  "S5C4_code",
+  "S5C4_pure",
+  "Silas+shared",
   "S5C4_shared"
  ],
  "variant": "aslot-sc",

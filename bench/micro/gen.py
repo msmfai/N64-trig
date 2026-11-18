@@ -207,6 +207,8 @@ def gen_sincos(fid, form):
            '2: jr    $ra', f'mov.s   $f2, {rc}']
     if rc == '$f0':
         raise SystemExit(f'{fid}: cosine in $f0')
+    if form['kind'] == 'csqrt':          # sqrt(1 - C^2) is not negative: the sine takes the sign of x ($t1)
+        body += ['bltzl   $t1, 9f', f'neg.s   {rs}, {rs}', '9:']
     return func(f'g_{fid}_sincos', pro + body + epi), g.table
 
 
@@ -219,6 +221,8 @@ def gen_sin(fid, form, table):
         out = build(form, which, g, 'fx', x2)
         body, reg = schedule(g, {'fx': '$f0'}, {out['r']})
         blocks[which] = body + [f'mov.s   $f0, {reg[out["r"]]}']
+        if which == 's' and form['kind'] == 'csqrt':   # the sine takes the sign of x ($t1)
+            blocks[which] += ['bltzl   $t1, 9f', 'neg.s   $f0, $f0', '9:']
     pro = [l.replace('$f20', '$f0') for l in fold_prologue()] + ['beqz    $t2, 1f', 'cvt.s.w $f0, $f0']
     lines = pro + blocks['c'] + ['b       2f', 'nop', '1:'] + blocks['s'] + \
         ['2: beqz  $t3, 3f', 'nop', 'neg.s   $f0, $f0', '3: jr    $ra', 'nop']
