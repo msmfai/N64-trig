@@ -15,8 +15,8 @@ S5C6 is a sine and cosine kernel for the N64 CPU (VR4300). This repository compa
 | Max error | 1.92e-4 | 1.45e-5 |
 | CPU cycles for one sine and one cosine (exact) | 93.0 | 89.5 |
 | CPU cycles for one sine (exact) | 65.5 | 54.5 |
-| Memory traffic in the game, bytes per frame | 545,038 ± 5,339 | 545,968 ± 5,315 (+930 ± 2,347) |
-| CPU time in the game, µs per frame | 12,322 ± 99 | 12,326 ± 99 (+4 ± 46) |
+| Memory traffic in the game, bytes per frame | 545,395 ± 5,058 | 547,176 ± 5,293 (+1,781 ± 2,499) |
+| CPU time in the game, µs per frame | 12,328 ± 94 | 12,348 ± 99 (+19 ± 48) |
 <!-- /gen:summary-table -->
 
 Accuracy: exact values over all 65,536 angles (experiment 1). Cycles: exact values from a timing loop (experiment 2). In-game values: mean ± 95 % confidence interval over the samples (experiments 3 and 4). In brackets: difference from Silas.
@@ -195,8 +195,8 @@ Experiments 3 and 4 use the same runs.
 | Emulator | [Ares 64](https://github.com/HailToDodongo/ares-64) (commit b4ead632f), headless, CPU interpreter: it fetches every instruction through the modelled caches ([`bench/ares64.js`](bench/ares64.js)) |
 | Input | The seven attract-mode demos of SM64: 4,304 measured frames, with approximately 456 sine and cosine calls per frame |
 | Builds | Two for each kernel. **`sincoss()`:** [`bench/hsm64-sincos.patch`](bench/hsm64-sincos.patch) changes 13 functions to get the sine and the cosine of one angle from one `trig_sincos` call. These 13 functions make 98 % of the sine and cosine pairs. **Separate calls:** the game calls `sins()` and `coss()`, and each is one `trig_sin` call. |
-| Test conditions | 27 samples. Each sample is one random draw of the four conditions below ([`bench/sample.py`](bench/sample.py)). All builds of a sample use the same draw. |
-| Result | The mean of the 27 samples ± the 95 % confidence interval (Student's t). In brackets: the difference from Silas in the same sample, with its own confidence interval. |
+| Test conditions | 29 samples. Each sample is one random draw of the four conditions below ([`bench/sample.py`](bench/sample.py)). All builds of a sample use the same draw. |
+| Result | The mean of the 29 samples ± the 95 % confidence interval (Student's t). In brackets: the difference from Silas in the same sample, with its own confidence interval. |
 
 **Test conditions:** The position of code and data in memory decides which of them collide in the caches. These collisions change each result by chance, by up to approximately ±3 %. Each sample draws the positions and the game state at random, from the full period of each cache:
 
@@ -217,10 +217,10 @@ Bytes per frame that the CPU moves over the RDRAM bus, counted by the emulator o
 <!-- gen:traffic -->
 | | `sincoss()` at the 13 changed call sites | Separate `sins()` and `coss()` calls |
 |---|---|---|
-| Silas | 545,038 ± 5,339 | 553,950 ± 4,926 |
-| S5C6 one cache line | 545,968 ± 5,315 (+930 ± 2,347) | 554,972 ± 4,829 (+1,022 ± 2,675) |
-| S5C6 pure code | 545,731 ± 5,470 (+693 ± 2,759) | 553,956 ± 4,932 (+6 ± 2,481) |
-| S5C6 quantized | 545,046 ± 5,170 (+8 ± 2,064) | 554,036 ± 4,969 (+86 ± 2,583) |
+| Silas | 545,395 ± 5,058 | 554,781 ± 4,961 |
+| S5C6 one cache line | 547,176 ± 5,293 (+1,781 ± 2,499) | 555,956 ± 4,921 (+1,175 ± 2,498) |
+| S5C6 pure code | 547,210 ± 5,607 (+1,815 ± 3,034) | 554,867 ± 4,944 (+86 ± 2,316) |
+| S5C6 quantized | 546,287 ± 5,164 (+892 ± 2,306) | 554,868 ± 4,970 (+87 ± 2,404) |
 <!-- /gen:traffic -->
 
 ## 4. CPU time in the game
@@ -230,10 +230,10 @@ Game-thread CPU time from the HackerSM64 profiler, in µs per frame. Audio is no
 <!-- gen:cputime -->
 | | `sincoss()` at the 13 changed call sites | Separate `sins()` and `coss()` calls |
 |---|---|---|
-| Silas | 12,322 ± 99 | 12,586 ± 95 |
-| S5C6 one cache line | 12,326 ± 99 (+4 ± 46) | 12,558 ± 95 (−27 ± 51) |
-| S5C6 pure code | 12,318 ± 102 (−4 ± 52) | 12,526 ± 97 (−60 ± 46) |
-| S5C6 quantized | 12,303 ± 97 (−19 ± 39) | 12,517 ± 98 (−69 ± 46) |
+| Silas | 12,328 ± 94 | 12,598 ± 95 |
+| S5C6 one cache line | 12,348 ± 99 (+19 ± 48) | 12,575 ± 96 (−23 ± 48) |
+| S5C6 pure code | 12,343 ± 104 (+15 ± 56) | 12,541 ± 97 (−57 ± 43) |
+| S5C6 quantized | 12,324 ± 97 (−4 ± 42) | 12,532 ± 98 (−65 ± 43) |
 <!-- /gen:cputime -->
 
 ## Checks
