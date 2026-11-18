@@ -5,8 +5,10 @@
       --clang BIN --binutils BIN --baserom sm64.us.z64 --ares ARES_TEST
   python3 bench/fast.py report --name NAME
 
-A kernel is a published kernel (Silas, S5C6_line, S5C6_code, S5C6_quantized)
-or FORMS_FILE:KEY (bench/slot.py). The first kernel is the reference.
+A kernel is a hand-written kernel (bench/slot.py HAND) or FORMS_FILE:KEY;
+KERNEL+shared uses only the kernel's trig_sincos, also for single calls.
+The first kernel is the reference. Adding kernels to an existing run reuses
+its base ROMs and runs only the new kernels.
 
 For each sample (bench/sample.py draw: code, data and heap shift, game seed),
 the script builds one HackerSM64 ROM with the fixed kernel slot (build
@@ -49,7 +51,9 @@ def kid(kernel):
 def cmd_run(args):
     variant = 'aslot' if args.separate else 'aslot-sc'
     args.slot = 'fast'
-    SA.BUILD = SA.build_id()
+    prev = RES / args.name / 'run.json'
+    # a continuing run keeps its base ROMs, so new kernels pair with the results already there
+    SA.BUILD = json.loads(prev.read_text())['build'] if prev.exists() else SA.build_id()
     tree, env = B.setup(args, [variant])
     base_dir = REPO / 'work/fast/base' / f'{SA.BUILD}-{variant}'
     out = RES / args.name
