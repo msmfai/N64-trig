@@ -1,0 +1,34 @@
+{
+ "Silas": {
+  "code bytes": {
+   "trig_sincos": 156,
+   "trig_sin": 120
+  },
+  "data bytes": 0,
+  "slot": "0x801ae8e0"
+ },
+ "S5C4_line": {
+  "code bytes": {
+   "trig_sincos": 144,
+   "trig_sin": 128
+  },
+  "data bytes": 16,
+  "slot": "0x801ae8e0"
+ },
+ "S5C4_code": {
+  "code bytes": {
+   "trig_sincos": 168,
+   "trig_sin": 152
+  },
+  "data bytes": 0,
+  "slot": "0x801ae8e0"
+ },
+ "S5C4_shared": {
+  "code bytes": {
+   "trig_sincos": 144,
+   "trig_sin": 0
+  },
+  "data bytes": 16,
+  "slot": "0x801ae8e0"
+ }
+}

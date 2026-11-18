@@ -1,0 +1,20 @@
+{
+ "kernels": [
+  "Silas",
+  "S5C6_line",
+  "S5C6_code",
+  "S5C6_quantized",
+  "fit/variants-S5C4-builds.json:S5C4 free, balance, one cache line",
+  "fit/variants-S5C4-builds.json:S5C4 free, min E, one cache line",
+  "fit/variants-S5C4-builds.json:S5C4 top 8-bit, balance, pure code",
+  "fit/variants-S5C4-builds.json:S5C4 quantized, balance, pure code",
+  "fit/variants-S5C4-builds.json:S5C4 all 8-bit, min E, pure code",
+  "fit/forms.json:S3C4 top 8-bit",
+  "fit/forms.json:S5C6",
+  "fit/forms.json:S5+sqrt"
+ ],
+ "variant": "aslot-sc",
+ "build": "df1e301a190b",
+ "emulator": "ares-64 b4ead632f interpreter, RSP recompiler",
+ "sampler seed": 1
+}

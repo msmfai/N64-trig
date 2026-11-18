@@ -97,9 +97,13 @@ static u32 sPrevCalls;
 #elif TRIG_FUNC == 7
 #define TB_FAMILY "LUT16"
 #elif TRIG_FUNC == 8
-#define TB_FAMILY "ONE"
+#define TB_FAMILY "S5C6 8 BIT"     /* quantized: the font has no Q or Z */
+#elif TRIG_FUNC == 6
+#define TB_FAMILY "S5C6 LINE"      /* one cache line */
+#elif TRIG_FUNC == 5
+#define TB_FAMILY "S5C6 CODE"      /* pure code */
 #elif TRIG_FUNC == 9
-#define TB_FAMILY "SLOT"
+#define TB_FAMILY "SLOT"           /* the kernel written into the slot (bench/slot.py) */
 #else
 #define TB_FAMILY "BFSK"
 #endif
@@ -162,6 +166,32 @@ void trig_bench_init(void) {
 #endif
 }
 
+/* Console results (bench/hardware/README.md), computed once when the demos
+ * are done and drawn in the right column of the results screen:
+ *   SIN, PAIR, SC  CPU cycles per call x10, random angles, warm cache (needs a
+ *                TRIG_CYCLES build): one sine, sine + cosine as two calls,
+ *                one sincos
+ *   CRC          CRC-32 of the bit patterns of trig_sin(a) and
+ *                trig_sin(a + 0x4000) for all 65536 angles: equal to the
+ *                emulator's value if the console computes the same floats
+ *   BAD          angles where trig_sincos differs from two trig_sin calls
+ *   HASH         the position hashes of Mario of all demos, combined */
+static void tb_hw_results(void);
+static s32 sHwReady;
+static u32 sHwCyc[3], sHwCrc, sHwBad, sHwHash;
+
+static void tb_hex(char *out, const char *label, u32 v) {
+    s32 k;
+
+    while (*label != '\0') {
+        *out++ = *label++;
+    }
+    for (k = 28; k >= 0; k -= 4) {
+        *out++ = "0123456789ABCDEF"[(v >> k) & 15];
+    }
+    *out = '\0';
+}
+
 static void trig_bench_draw(void) {
     u64 total = 0;
     u32 frames = 0;
@@ -193,6 +223,31 @@ static void trig_bench_draw(void) {
         print_text(16, y, "CALLS");
         print_text_fmt_int(96, y, "%d", (s32) (calls / frames));
 #endif
+    }
+    if (!sHwReady) {
+        tb_hw_results();
+        sHwReady = TRUE;
+    }
+    {
+        static char crc[16], hash[16];
+        s32 x = 144;
+
+        y = 208;
+#if TRIG_CYCLES
+        print_text(x, y, "CYCLES *10");     /* '*' is the font's multiplication sign */
+        print_text(x, y - 18, "SIN");
+        print_text_fmt_int(x + 64, y - 18, "%d", (s32) sHwCyc[0]);
+        print_text(x, y - 36, "PAIR");
+        print_text_fmt_int(x + 64, y - 36, "%d", (s32) sHwCyc[1]);
+        print_text(x, y - 54, "SC");
+        print_text_fmt_int(x + 64, y - 54, "%d", (s32) sHwCyc[2]);
+#endif
+        tb_hex(crc, "CRC ", sHwCrc);
+        print_text(x, y - 90, crc);
+        print_text(x, y - 108, "BAD");
+        print_text_fmt_int(x + 64, y - 108, "%d", (s32) sHwBad);
+        tb_hex(hash, "HASH ", sHwHash);
+        print_text(x, y - 126, hash);
     }
 }
 
@@ -357,13 +412,9 @@ volatile f32 gTrigOne = 1.0f;
         (void) one;                                                            \
     } while (0)
 
-static void tb_cycles_report(void) {
-    static char line[16 + 10 * 9 + 2];
-    u32 t[10];
-    u32 mask, pass, k;
+static void tb_cycles_measure(u32 t[10]) {
+    u32 mask, pass;
     s32 rnd;
-    char *p = line;
-    const char *tag = "TRIGCYCLES";
 
     mask = __osDisableInt();
     for (pass = 0; pass < 2; pass++) {
@@ -377,6 +428,16 @@ static void tb_cycles_report(void) {
         }
     }
     __osRestoreInt(mask);
+}
+
+static void tb_cycles_report(void) {
+    static char line[16 + 10 * 9 + 2];
+    u32 t[10];
+    u32 k;
+    char *p = line;
+    const char *tag = "TRIGCYCLES";
+
+    tb_cycles_measure(t);
     while (*tag != '\0') {
         *p++ = *tag++;
     }
@@ -392,6 +453,55 @@ static void tb_cycles_report(void) {
     tb_emux_log(line);
 }
 #endif
+
+static u32 tb_crc32(u32 crc, u32 w) {
+    s32 b;
+
+    for (b = 0; b < 32; b++) {
+        u32 bit = (crc ^ (w >> b)) & 1;
+        crc = (crc >> 1) ^ (bit ? 0xEDB88320u : 0);
+    }
+    return crc;
+}
+
+static void tb_hw_results(void) {
+    u32 i;
+
+#if TRIG_CYCLES
+    {
+        u32 t[10];
+
+        tb_cycles_measure(t);       /* t[5..9]: random angles */
+        sHwCyc[0] = (u32) (((u64) (t[6] - t[5]) * 10) / TB_N);
+        sHwCyc[1] = (u32) (((u64) (t[8] - t[7]) * 10) / TB_N);
+        sHwCyc[2] = (u32) (((u64) (t[9] - t[7]) * 10) / TB_N);
+    }
+#endif
+#if TRIG_FUNC != 0
+    {
+        u32 a, crc = 0xFFFFFFFFu;
+
+        for (a = 0; a < 0x10000; a++) {
+            f32 s0 = trig_sin(a), c0 = trig_sin(a + 0x4000);
+            crc = tb_crc32(crc, *(u32 *) &s0);
+            crc = tb_crc32(crc, *(u32 *) &c0);
+#if TRIG_SINCOS && TRIG_USE
+            {
+                _Complex float sc = trig_sincos(a);
+                f32 s1 = __real__ sc, c1 = __imag__ sc;
+                if (*(u32 *) &s1 != *(u32 *) &s0 || *(u32 *) &c1 != *(u32 *) &c0) {
+                    sHwBad++;
+                }
+            }
+#endif
+        }
+        sHwCrc = ~crc;
+    }
+#endif
+    for (i = 0; i < TB_DEMOS; i++) {
+        sHwHash = (sHwHash << 5 | sHwHash >> 27) ^ gTrigBench.d[i].hash;
+    }
+}
 
 /* The whole of gTrigBench as one line of hex on ares's terminal, then quit:
  * a runner needs nothing but ares's output (tools: bench/run.py). */

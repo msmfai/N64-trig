@@ -1,0 +1,34 @@
+{
+ "Silas": {
+  "code bytes": {
+   "trig_sincos": 156,
+   "trig_sin": 120
+  },
+  "data bytes": 0,
+  "slot": "0x801ae8e0"
+ },
+ "fit/variants-S5C4-builds.json:S5C4 free, balance, one cache line": {
+  "code bytes": {
+   "trig_sincos": 160,
+   "trig_sin": 232
+  },
+  "data bytes": 16,
+  "slot": "0x801ae8e0"
+ },
+ "fit/hwsearch-S5C4-builds.json:S5C4 top 8-bit, hardware caps, pure code": {
+  "code bytes": {
+   "trig_sincos": 180,
+   "trig_sin": 232
+  },
+  "data bytes": 0,
+  "slot": "0x801ae8e0"
+ },
+ "fit/hwsearch-S5C4-builds.json:S5C4 top 8-bit, hardware caps, one cache line": {
+  "code bytes": {
+   "trig_sincos": 164,
+   "trig_sin": 232
+  },
+  "data bytes": 12,
+  "slot": "0x801ae8e0"
+ }
+}
