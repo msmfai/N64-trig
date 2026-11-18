@@ -127,6 +127,7 @@ def build_checked(tree, v, args, env, z, dest):
 
 
 def main():
+    global OUT, VARIANTS
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     B.add_args(ap)
     ap.add_argument('--samples', type=int, default=64, help='number of samples')
@@ -134,7 +135,12 @@ def main():
     ap.add_argument('--ares', default=R.default_ares())
     ap.add_argument('--run-jobs', type=int, default=4, help='ares processes for each sample')
     ap.add_argument('--parallel', type=int, default=3, help='samples run at the same time')
+    ap.add_argument('--builds', nargs='+', default=VARIANTS, help='the builds of each sample')
+    ap.add_argument('--tag', help='write to bench/results/samples-TAG/ (another set of builds)')
     args = ap.parse_args()
+    VARIANTS = args.builds
+    if args.tag:
+        OUT = HERE / 'results' / f'samples-{args.tag}'
     global BUILD
     BUILD = build_id()
     emu = emulator(args.ares)

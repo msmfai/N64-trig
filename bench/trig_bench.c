@@ -98,6 +98,8 @@ static u32 sPrevCalls;
 #define TB_FAMILY "LUT16"
 #elif TRIG_FUNC == 8
 #define TB_FAMILY "ONE"
+#elif TRIG_FUNC == 9
+#define TB_FAMILY "SLOT"
 #else
 #define TB_FAMILY "BFSK"
 #endif
