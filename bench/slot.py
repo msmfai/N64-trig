@@ -29,6 +29,9 @@ HAND = {  # name: (source, preprocessor defines or None, trig_k words)
     'S5C6_line': (REPO / 'kernel/s5c6.s', None, [0x38c90dd0, 0xaa24fee4, 0xb19de6b5, 0x2280c3c2]),
     'S5C6_code': (REPO / 'kernel/s5c6_code.s', None, []),
     'S5C6_quantized': (REPO / 'kernel/s5c6_quantized.s', None, []),
+    'S5C4_line': (REPO / 'kernel/s5c4_line.s', None, [0x38c907e2, 0xaa2449da, 0xb19ddd5a, 0x3f800000]),
+    'S5C4_code': (REPO / 'kernel/s5c4_code.s', None, []),
+    'S5C4_shared': (REPO / 'kernel/s5c4_shared.s', None, [0x38c907e2, 0xaa2449da, 0xb19ddd5a, 0x3f800000]),
 }
 
 
@@ -85,14 +88,23 @@ def slot_image(kernel, slot_addr, binutils, clang):
         run([tool('objcopy'), '-O', 'binary', '-j', '.text', work / 'k.elf', work / 'k.bin'])
         text = (work / 'k.bin').read_bytes()
     img = bytearray(SIZE)
+    shared = syms['trig_sin'][0] == syms['trig_sincos'][0]
+    if shared:                               # one function for both: trig_sin branches to trig_sincos
+        off = (SINCOS - (SIN + 4)) // 4 & 0xFFFF
+        img[SIN:SIN + 8] = (0x10000000 | off).to_bytes(4, 'big') + bytes(4)   # b trig_sincos; nop
     for name, off in (('trig_sincos', SINCOS), ('trig_sin', SIN)):
+        if shared and name == 'trig_sin':
+            continue
         addr, size = syms[name]
         if size > 0x180:
             raise SystemExit(f'{kernel}: {name} is {size} bytes, the slot has 0x180')
         img[off:off + size] = text[addr - 0x80000000:addr - 0x80000000 + size]
     for i, w in enumerate(words):
         img[DATA + 4 * i:DATA + 4 * i + 4] = w.to_bytes(4, 'big')
-    return bytes(img), {n: syms[n][1] for n in ('trig_sincos', 'trig_sin')}, len(words) * 4
+    sizes = {n: syms[n][1] for n in ('trig_sincos', 'trig_sin')}
+    if shared:
+        sizes['trig_sin'] = 0                # the 8-byte branch to trig_sincos is a slot artefact
+    return bytes(img), sizes, len(words) * 4
 
 
 def write(base_rom, base_elf, kernel, out, binutils, clang):

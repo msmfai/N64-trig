@@ -1,0 +1,12 @@
+{
+ "kernels": [
+  "Silas",
+  "S5C4_line",
+  "S5C4_code",
+  "S5C4_shared"
+ ],
+ "variant": "aslot",
+ "build": "df1e301a190b",
+ "emulator": "ares-64 b4ead632f interpreter, RSP recompiler",
+ "sampler seed": 1
+}

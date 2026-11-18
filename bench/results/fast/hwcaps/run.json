@@ -1,0 +1,12 @@
+{
+ "kernels": [
+  "Silas",
+  "fit/variants-S5C4-builds.json:S5C4 free, balance, one cache line",
+  "fit/hwsearch-S5C4-builds.json:S5C4 top 8-bit, hardware caps, pure code",
+  "fit/hwsearch-S5C4-builds.json:S5C4 top 8-bit, hardware caps, one cache line"
+ ],
+ "variant": "aslot-sc",
+ "build": "df1e301a190b",
+ "emulator": "ares-64 b4ead632f interpreter, RSP recompiler",
+ "sampler seed": 1
+}

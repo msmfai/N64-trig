@@ -59,7 +59,7 @@ def cmd_run(args):
                                               'sampler seed': args.sampler_seed}, indent=1))
     gate = threading.Semaphore(args.emulators)
     threads, lock = [], threading.Lock()
-    info = {}
+    info = json.loads((out / 'kernels.json').read_text()) if (out / 'kernels.json').exists() else {}
 
     def run_one(i, k, rom):
         try:
@@ -115,8 +115,12 @@ def cmd_report(args):
     ref = kernels[0]
     print(f"{len(ids)} samples, {meta['variant']}, {meta['emulator']}. Value: mean ± 95 % confidence interval; "
           f"in brackets: difference from {ref} in the same sample.\n")
-    print('| Kernel | sincos / sin code bytes | data bytes | CPU time, µs per frame | Memory traffic, bytes per frame |')
-    print('|---|---|---|---|---|')
+    print('RAM pressure: code bytes and 32-byte instruction-cache lines of each function, data bytes, and '
+          '"cold": the bytes both functions and the data move over the RDRAM bus when none of them is cached. '
+          'A sin of 0 bytes is one function for both (the slot adds an 8-byte branch to it).\n')
+    print('| Kernel | sincos bytes (lines) | sin bytes (lines) | data | cold | CPU time, µs per frame | '
+          'Memory traffic, bytes per frame |')
+    print('|---|---|---|---|---|---|---|')
     for k in kernels:
         cells = []
         for key in ('us', 'bytes'):
@@ -128,8 +132,14 @@ def cmd_report(args):
             cells.append(c)
         sz = sizes.get(k, {})
         code = sz.get('code bytes', {})
-        print(f"| {k.split(':', 1)[-1]} | {code.get('trig_sincos', '?')} / {code.get('trig_sin', '?')} | "
-              f"{sz.get('data bytes', '?')} | {cells[0]} | {cells[1]} |")
+        sc, sn, dbytes = code.get('trig_sincos'), code.get('trig_sin'), sz.get('data bytes')
+        if sc is None:
+            ram = '| ? | ? | ? | ?'
+        else:
+            lines = lambda n: -(-n // 32)
+            cold = 32 * (lines(sc) + lines(sn)) + (16 if dbytes else 0)
+            ram = f'| {sc} ({lines(sc)}) | {sn} ({lines(sn)}) | {dbytes} | {cold}'
+        print(f"| {k.split(':', 1)[-1]} {ram} | {cells[0]} | {cells[1]} |")
 
 
 def main():

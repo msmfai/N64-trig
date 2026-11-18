@@ -1,0 +1,65 @@
+{
+ "S5C4 free, hardware caps": {
+  "kind": "poly",
+  "ns": 5,
+  "nc": 4,
+  "family": "free",
+  "coefficients": [
+   952698841,
+   2854509899,
+   445115625,
+   2979913032,
+   578633514
+  ],
+  "meets caps": false,
+  "creep U": 6.003027031020736e-08,
+  "max U": 1.2117562082636368e-05,
+  "mean U 0-6": 2.930854931988137e-08,
+  "drift": 8.508441655496059e-07,
+  "direction": 0.3077537927520081,
+  "max error": 2.4484212036768316e-05,
+  "above 1": false
+ },
+ "S5C4 top 8-bit, hardware caps": {
+  "kind": "poly",
+  "ns": 5,
+  "nc": 4,
+  "family": "top 8-bit",
+  "coefficients": [
+   952698850,
+   2854504922,
+   444923904,
+   2979913050,
+   578617344
+  ],
+  "meets caps": true,
+  "creep U": 5.993426444028671e-08,
+  "max U": 1.9927116362339348e-05,
+  "mean U 0-6": 2.9189780241772166e-08,
+  "drift": -2.350379732903171e-06,
+  "direction": 0.3887580248718403,
+  "max error": 2.893583718521775e-05,
+  "above 1": false
+ },
+ "S5C4 quantized, hardware caps": {
+  "kind": "poly",
+  "ns": 5,
+  "nc": 4,
+  "family": "quantized",
+  "coefficients": [
+   952703738,
+   2854551552,
+   444989440,
+   2979921920,
+   578879488
+  ],
+  "meets caps": false,
+  "creep U": 1.2387573482541825e-06,
+  "max U": 1.9921699148994776e-05,
+  "mean U 0-6": 4.141556744197993e-07,
+  "drift": -5.7237461181338614e-06,
+  "direction": 1.348293317592542,
+  "max error": 0.00010970273298666067,
+  "above 1": false
+ }
+}
