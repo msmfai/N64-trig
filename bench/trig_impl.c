@@ -127,6 +127,8 @@ const TrigLutxNode gTrigLutx16[17] __attribute__((aligned(32))) = { LUTX16_TABLE
 #endif
 #endif
 
+#elif TRIG_FUNC == 9
+/* trig_sin and trig_sincos are in the fixed slot, trig_slot.s (bench/slot.py). */
 #else
 #error "unknown TRIG_FUNC"
 #endif

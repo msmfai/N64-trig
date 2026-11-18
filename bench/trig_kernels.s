@@ -28,7 +28,7 @@
     .set noat
     .text
 
-#if TRIG_FUNC >= 4
+#if TRIG_FUNC >= 4 && TRIG_FUNC <= 8     /* 9: the slot, trig_slot.s */
 
     .global trig_sin
     .type   trig_sin, @function

@@ -121,7 +121,7 @@ class Run:
         (work / 'settings.bml').write_text(SETTINGS.format(saves=work / 'saves'))
         self.log = (work / 'ares.log').open('wb')
         if Path(ares).name == 'ares-test':     # Ares 64's headless runner (bench/ares64.js)
-            cmd = [ares, str(HERE / 'ares64.js'), str(rom), 'none', 'interp', '--timeout', '7200']
+            cmd = [ares, str(HERE / 'ares64.js'), str(rom), 'none', 'interp', 'rsp-recomp', '--timeout', '7200']
         else:                                  # ares v148 or later
             cmd = [ares, '--settings-file', str(work / 'settings.bml'), '--kiosk', str(rom)]
         self.proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=self.log, start_new_session=True)

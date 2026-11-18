@@ -53,12 +53,14 @@ VARIANTS = {
     'aone-sc': (8, 1),
     # the same, with the kernel inline at each sincoss() site (bench/sincos_inline.h): no call
     'abfsk-sci': (5, 1), 'aone-sci': (8, 1),
+    # the fixed kernel slot (trig_slot.s): one build for every kernel, bench/slot.py writes the kernel
+    'aslot': (9, 1), 'aslot-sc': (9, 1),
 }
 GROUPS = {'kernels': ['tasilas', 'asilas', 'tabfsk', 'abfsk', 'tabfskl', 'abfskl', 'talutx', 'alutx', 'taone', 'aone'],
           'c': ['tsilas', 'silas', 'tbfsk', 'bfsk'],
           'sincos': ['vanilla-sc', 'asilas-sc', 'abfsk-sc', 'abfskl-sc', 'alutx-sc', 'aone-sc'],
           'inline': ['abfsk-sci', 'aone-sci']}
-SOURCES = ('trig_impl.c', 'trig_bench.c', 'trig_bench.h', 'trig_kernels.s')
+SOURCES = ('trig_impl.c', 'trig_bench.c', 'trig_bench.h', 'trig_kernels.s', 'trig_slot.s')
 
 
 def run(cmd, **kw):
