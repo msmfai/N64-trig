@@ -1,0 +1,4 @@
+S3C4     free       limits not met E 2.63e-04 U 1.12e-04 creep 2.14e-05 dir 3.00 | E range 1.5e-04..5.7e-03
+S3C4     top 8-bit  limits not met E 2.59e-04 U 1.28e-04 creep 1.98e-05 dir 2.67 | E range 1.6e-04..1.2e-03
+S3C4     quantized  limits not met E 1.86e-04 U 1.36e-04 creep 2.53e-05 dir 1.96 | E range 1.6e-04..2.3e-03
+S3C4     all 8-bit  limits not met E 3.42e-04 U 2.14e-04 creep 1.16e-05 dir 3.61 | E range 3.4e-04..5.6e-01

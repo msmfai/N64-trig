@@ -1,0 +1,4 @@
+S3+sqrt  free       limits not met E 1.59e-04 U 9.15e-08 creep 8.80e-08 dir 2.06 | E range 1.5e-04..1.6e-04
+S3+sqrt  top 8-bit  limits not met E 1.59e-04 U 9.19e-08 creep 8.87e-08 dir 1.99 | E range 1.6e-04..3.8e-04
+S3+sqrt  quantized  limits not met E 1.59e-04 U 9.19e-08 creep 8.87e-08 dir 1.99 | E range 1.6e-04..3.8e-04
+S3+sqrt  all 8-bit  limits not met E 3.42e-04 U 9.29e-08 creep 8.70e-08 dir 4.38 | E range 3.4e-04..5.6e-04

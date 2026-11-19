@@ -1,0 +1,4 @@
+T3       free       limits not met E 1.60e-04 U 2.56e-07 creep 2.32e-07 dir 1.72 | E range 1.4e-04..1.6e-04
+T3       top 8-bit  limits not met E 1.61e-04 U 2.43e-07 creep 2.33e-07 dir 1.73 | E range 1.5e-04..2.5e-04
+T3       quantized  limits not met E 1.61e-04 U 2.43e-07 creep 2.33e-07 dir 1.73 | E range 1.5e-04..2.9e-04
+T3       all 8-bit  limits not met E 2.31e-04 U 2.46e-07 creep 2.33e-07 dir 2.88 | E range 2.3e-04..1.2e-03

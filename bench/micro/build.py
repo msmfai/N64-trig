@@ -39,6 +39,12 @@ def main():
     ap.add_argument('--out', type=Path, default=REPO / 'work/micro')
     ap.add_argument('--hardware', action='store_true',
                     help='results on the screen; no ares-only instructions are executed (for a console)')
+    ap.add_argument('--layout', type=int, default=0,
+                    help='layout N: N * 3,232 bytes (mod 16 KB) of code and N * 1,616 bytes (mod 8 KB) of data '
+                         'between the timing loop and the kernels. A kernel whose lines collide with the lines of '
+                         'the timing loop in one layout does not collide in the others (bench/frontier.py: median)')
+    ap.add_argument('--hand-forms', type=Path,
+                    help='kernel list of bench/forms.py (JSON): hand-written form files with coefficient sets')
     ap.add_argument('--forms', type=Path, nargs='+', default=[REPO / 'fit/forms.json'],
                     help='forms to generate (fit/forms.py, fit/variants.py output)')
     args = ap.parse_args()
@@ -69,9 +75,27 @@ def main():
                           ''.join(f'    .word   0x{w:08x}\n' for w in words))
             run(asm + ['-o', out / f'{name}_data.o', ds])
             objs.append(out / f'{name}_data.o')
+    hand_forms = json.loads(args.hand_forms.read_text()) if args.hand_forms else []
+    for k in hand_forms:                     # kernel/forms/*.s with --defsym coefficients
+        name = k['name']
+        o = out / f'{name}.o'
+        run(asm + [a for n, v in k['defsym'].items() for a in ('--defsym', f'{n}=0x{v:08x}')] +
+            ['-o', o, REPO / k['src']])
+        run([tool('objcopy'), '--redefine-sym', f'trig_sin=h_{name}_sin',
+             '--redefine-sym', f'trig_sincos=h_{name}_sincos', '--redefine-sym', f'trig_k=h_{name}_k', o])
+        objs.append(o)
+        if k['words']:
+            ds = out / f'{name}_data.s'
+            ds.write_text('    .section .rodata\n    .balign 16\n    .global h_' + name + '_k\nh_' + name + '_k:\n' +
+                          ''.join(f'    .word   0x{w:08x}\n' for w in k['words']))
+            run(asm + ['-o', out / f'{name}_data.o', ds])
+            objs.append(out / f'{name}_data.o')
     # (sin symbol, sincos symbol, name); NAME+shared: the kernel's trig_sincos also serves single calls
     entries = [(f'h_{n}_sin', f'h_{n}_sincos', n) for n, *_ in HAND] + \
               [(f'h_{n}_sincos', f'h_{n}_sincos', f'{n}+shared') for n in SHARED] + \
+              [(f'h_{k["name"]}_sin', f'h_{k["name"]}_sincos', k['name']) for k in hand_forms] + \
+              [(f'h_{k["name"]}_sincos', f'h_{k["name"]}_sincos', k['name'] + '+shared')
+               for k in hand_forms if k.get('shared')] + \
               [(f'g_{fid}_sin', f'g_{fid}_sincos', key) for fid, key in ids]
     run(['python3', HERE / 'hazards.py', '--binutils', args.binutils] + objs)   # refuse a kernel with a hazard
     (out / 'table.h').write_text(
@@ -83,8 +107,12 @@ def main():
     run([clang] + CFLAGS + (['-DMICRO_HW'] if args.hardware else []) +
         ['-I', out, '-I', HERE, '-c', '-o', out / 'main.o', HERE / 'main.c'])
     run(asm + ['-o', out / 'crt0.o', HERE / 'crt0.s'])
+    pad = out / 'layout.s'                   # linked between the timing loop and the kernels
+    pad.write_text(f'    .text\n    .space {(args.layout * 3232) % 16384}\n'
+                   f'    .section .rodata\n    .space {(args.layout * 1616) % 8192}\n')
+    run(asm + ['-o', out / 'layout.o', pad])
     run([tool('ld'), '-T', HERE / 'link.ld', '-Map', out / 'micro.map', '-o', out / 'micro.elf',
-         out / 'crt0.o', out / 'main.o'] + objs)
+         out / 'crt0.o', out / 'main.o', out / 'layout.o'] + objs)
     run([tool('objcopy'), '-O', 'binary', out / 'micro.elf', out / 'micro.bin'])
     body = (out / 'micro.bin').read_bytes()
     assert len(body) <= 0x100000, 'IPL3 compat loads 1 MiB'

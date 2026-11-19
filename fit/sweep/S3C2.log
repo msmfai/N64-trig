@@ -1,0 +1,4 @@
+S3C2     free       limits not met E 4.24e-03 U 2.04e-04 creep 3.42e-05 dir 61.26 | E range 2.6e-03..1.8e-01
+S3C2     top 8-bit  limits not met E 4.38e-03 U 1.94e-04 creep 3.30e-05 dir 58.30 | E range 2.9e-03..1.8e-01
+S3C2     quantized  limits not met E 4.38e-03 U 1.94e-04 creep 3.30e-05 dir 58.30 | E range 2.9e-03..1.8e-01
+S3C2     all 8-bit  limits not met E 3.98e-03 U 6.81e-04 creep 7.65e-05 dir 57.63 | E range 2.9e-03..1.8e-01

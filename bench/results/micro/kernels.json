@@ -1,0 +1,3015 @@
+[
+ {
+  "name": "c2sqrt_line_free_limits",
+  "form": "C2+sqrt",
+  "load": "line",
+  "family": "free",
+  "point": "limits",
+  "src": "kernel/forms/c2sqrt_line.s",
+  "defsym": {
+   "C2": 2979518753
+  },
+  "words": [
+   2979518753,
+   1065353216
+  ],
+  "bits": [
+   2979518753
+  ],
+  "shared": true
+ },
+ {
+  "name": "c2sqrt_line_q_limits",
+  "form": "C2+sqrt",
+  "load": "line",
+  "family": "quantized",
+  "point": "limits",
+  "src": "kernel/forms/c2sqrt_line.s",
+  "defsym": {
+   "C2": 2979518753
+  },
+  "words": [
+   2979518753,
+   1065353216
+  ],
+  "bits": [
+   2979518753
+  ],
+  "shared": true
+ },
+ {
+  "name": "c2sqrt_line_a8_limits",
+  "form": "C2+sqrt",
+  "load": "line",
+  "family": "all 8-bit",
+  "point": "limits",
+  "src": "kernel/forms/c2sqrt_line.s",
+  "defsym": {
+   "C2": 2979528704
+  },
+  "words": [
+   2979528704,
+   1065353216
+  ],
+  "bits": [
+   2979528704
+  ],
+  "shared": true
+ },
+ {
+  "name": "c2sqrt_code_free_limits",
+  "form": "C2+sqrt",
+  "load": "code",
+  "family": "free",
+  "point": "limits",
+  "src": "kernel/forms/c2sqrt_code.s",
+  "defsym": {
+   "C2": 2979518753
+  },
+  "words": [],
+  "bits": [
+   2979518753
+  ],
+  "shared": true
+ },
+ {
+  "name": "c2sqrt_code_q_limits",
+  "form": "C2+sqrt",
+  "load": "code",
+  "family": "quantized",
+  "point": "limits",
+  "src": "kernel/forms/c2sqrt_code.s",
+  "defsym": {
+   "C2": 2979518753
+  },
+  "words": [],
+  "bits": [
+   2979518753
+  ],
+  "shared": true
+ },
+ {
+  "name": "c2sqrt_code_a8_limits",
+  "form": "C2+sqrt",
+  "load": "code",
+  "family": "all 8-bit",
+  "point": "limits",
+  "src": "kernel/forms/c2sqrt_code.s",
+  "defsym": {
+   "C2": 2979528704
+  },
+  "words": [],
+  "bits": [
+   2979528704
+  ],
+  "shared": true
+ },
+ {
+  "name": "c4sqrt_line_free_limits",
+  "form": "C4+sqrt",
+  "load": "line",
+  "family": "free",
+  "point": "limits",
+  "src": "kernel/forms/c4sqrt_line.s",
+  "defsym": {
+   "C2": 2979911633,
+   "C4": 578579053
+  },
+  "words": [
+   2979911633,
+   578579053,
+   1065353216
+  ],
+  "bits": [
+   2979911633,
+   578579053
+  ],
+  "shared": true
+ },
+ {
+  "name": "c4sqrt_line_t8_limits",
+  "form": "C4+sqrt",
+  "load": "line",
+  "family": "top 8-bit",
+  "point": "limits",
+  "src": "kernel/forms/c4sqrt_line.s",
+  "defsym": {
+   "C2": 2979911633,
+   "C4": 578551808
+  },
+  "words": [
+   2979911633,
+   578551808,
+   1065353216
+  ],
+  "bits": [
+   2979911633,
+   578551808
+  ],
+  "shared": true
+ },
+ {
+  "name": "c4sqrt_line_q_limits",
+  "form": "C4+sqrt",
+  "load": "line",
+  "family": "quantized",
+  "point": "limits",
+  "src": "kernel/forms/c4sqrt_line.s",
+  "defsym": {
+   "C2": 2979911633,
+   "C4": 578551808
+  },
+  "words": [
+   2979911633,
+   578551808,
+   1065353216
+  ],
+  "bits": [
+   2979911633,
+   578551808
+  ],
+  "shared": true
+ },
+ {
+  "name": "c4sqrt_line_a8_limits",
+  "form": "C4+sqrt",
+  "load": "line",
+  "family": "all 8-bit",
+  "point": "limits",
+  "src": "kernel/forms/c4sqrt_line.s",
+  "defsym": {
+   "C2": 2979921920,
+   "C4": 578879488
+  },
+  "words": [
+   2979921920,
+   578879488,
+   1065353216
+  ],
+  "bits": [
+   2979921920,
+   578879488
+  ],
+  "shared": true
+ },
+ {
+  "name": "c4sqrt_code_free_limits",
+  "form": "C4+sqrt",
+  "load": "code",
+  "family": "free",
+  "point": "limits",
+  "src": "kernel/forms/c4sqrt_code.s",
+  "defsym": {
+   "C2": 2979911633,
+   "C4": 578579053
+  },
+  "words": [],
+  "bits": [
+   2979911633,
+   578579053
+  ],
+  "shared": true
+ },
+ {
+  "name": "c4sqrt_code_t8_limits",
+  "form": "C4+sqrt",
+  "load": "code",
+  "family": "top 8-bit",
+  "point": "limits",
+  "src": "kernel/forms/c4sqrt_code.s",
+  "defsym": {
+   "C2": 2979911633,
+   "C4": 578551808
+  },
+  "words": [],
+  "bits": [
+   2979911633,
+   578551808
+  ],
+  "shared": true
+ },
+ {
+  "name": "c4sqrt_code_q_limits",
+  "form": "C4+sqrt",
+  "load": "code",
+  "family": "quantized",
+  "point": "limits",
+  "src": "kernel/forms/c4sqrt_code.s",
+  "defsym": {
+   "C2": 2979911633,
+   "C4": 578551808
+  },
+  "words": [],
+  "bits": [
+   2979911633,
+   578551808
+  ],
+  "shared": true
+ },
+ {
+  "name": "c4sqrt_code_a8_limits",
+  "form": "C4+sqrt",
+  "load": "code",
+  "family": "all 8-bit",
+  "point": "limits",
+  "src": "kernel/forms/c4sqrt_code.s",
+  "defsym": {
+   "C2": 2979921920,
+   "C4": 578879488
+  },
+  "words": [],
+  "bits": [
+   2979921920,
+   578879488
+  ],
+  "shared": true
+ },
+ {
+  "name": "c6sqrt_line_free_limits",
+  "form": "C6+sqrt",
+  "load": "line",
+  "family": "free",
+  "point": "limits",
+  "src": "kernel/forms/c6sqrt_line.s",
+  "defsym": {
+   "C2": 2979916241,
+   "C4": 578934957,
+   "C6": 2460439242
+  },
+  "words": [
+   2979916241,
+   578934957,
+   2460439242,
+   1065353216
+  ],
+  "bits": [
+   2979916241,
+   578934957,
+   2460439242
+  ],
+  "shared": true
+ },
+ {
+  "name": "c6sqrt_line_t8_limits",
+  "form": "C6+sqrt",
+  "load": "line",
+  "family": "top 8-bit",
+  "point": "limits",
+  "src": "kernel/forms/c6sqrt_line.s",
+  "defsym": {
+   "C2": 2979916241,
+   "C4": 578934957,
+   "C6": 2460418048
+  },
+  "words": [
+   2979916241,
+   578934957,
+   2460418048,
+   1065353216
+  ],
+  "bits": [
+   2979916241,
+   578934957,
+   2460418048
+  ],
+  "shared": true
+ },
+ {
+  "name": "c6sqrt_line_q_limits",
+  "form": "C6+sqrt",
+  "load": "line",
+  "family": "quantized",
+  "point": "limits",
+  "src": "kernel/forms/c6sqrt_line.s",
+  "defsym": {
+   "C2": 2979916241,
+   "C4": 578945024,
+   "C6": 2460418048
+  },
+  "words": [
+   2979916241,
+   578945024,
+   2460418048,
+   1065353216
+  ],
+  "bits": [
+   2979916241,
+   578945024,
+   2460418048
+  ],
+  "shared": true
+ },
+ {
+  "name": "c6sqrt_line_a8_limits",
+  "form": "C6+sqrt",
+  "load": "line",
+  "family": "all 8-bit",
+  "point": "limits",
+  "src": "kernel/forms/c6sqrt_line.s",
+  "defsym": {
+   "C2": 2979921920,
+   "C4": 579010560,
+   "C6": 2460418048
+  },
+  "words": [
+   2979921920,
+   579010560,
+   2460418048,
+   1065353216
+  ],
+  "bits": [
+   2979921920,
+   579010560,
+   2460418048
+  ],
+  "shared": true
+ },
+ {
+  "name": "c6sqrt_code_free_limits",
+  "form": "C6+sqrt",
+  "load": "code",
+  "family": "free",
+  "point": "limits",
+  "src": "kernel/forms/c6sqrt_code.s",
+  "defsym": {
+   "C2": 2979916241,
+   "C4": 578934957,
+   "C6": 2460439242
+  },
+  "words": [],
+  "bits": [
+   2979916241,
+   578934957,
+   2460439242
+  ],
+  "shared": true
+ },
+ {
+  "name": "c6sqrt_code_t8_limits",
+  "form": "C6+sqrt",
+  "load": "code",
+  "family": "top 8-bit",
+  "point": "limits",
+  "src": "kernel/forms/c6sqrt_code.s",
+  "defsym": {
+   "C2": 2979916241,
+   "C4": 578934957,
+   "C6": 2460418048
+  },
+  "words": [],
+  "bits": [
+   2979916241,
+   578934957,
+   2460418048
+  ],
+  "shared": true
+ },
+ {
+  "name": "c6sqrt_code_q_limits",
+  "form": "C6+sqrt",
+  "load": "code",
+  "family": "quantized",
+  "point": "limits",
+  "src": "kernel/forms/c6sqrt_code.s",
+  "defsym": {
+   "C2": 2979916241,
+   "C4": 578945024,
+   "C6": 2460418048
+  },
+  "words": [],
+  "bits": [
+   2979916241,
+   578945024,
+   2460418048
+  ],
+  "shared": true
+ },
+ {
+  "name": "c6sqrt_code_a8_limits",
+  "form": "C6+sqrt",
+  "load": "code",
+  "family": "all 8-bit",
+  "point": "limits",
+  "src": "kernel/forms/c6sqrt_code.s",
+  "defsym": {
+   "C2": 2979921920,
+   "C4": 579010560,
+   "C6": 2460418048
+  },
+  "words": [],
+  "bits": [
+   2979921920,
+   579010560,
+   2460418048
+  ],
+  "shared": true
+ },
+ {
+  "name": "q5_line_free_limits",
+  "form": "Q5",
+  "load": "line",
+  "family": "free",
+  "point": "limits",
+  "src": "kernel/forms/q5_line.s",
+  "defsym": {
+   "Q1": 952693254,
+   "Q3": 2854484613,
+   "Q5": 445690832
+  },
+  "words": [
+   952693254,
+   2854484613,
+   445690832
+  ],
+  "bits": [
+   952693254,
+   2854484613,
+   445690832
+  ],
+  "shared": true
+ },
+ {
+  "name": "q5_line_t8_limits",
+  "form": "Q5",
+  "load": "line",
+  "family": "top 8-bit",
+  "point": "limits",
+  "src": "kernel/forms/q5_line.s",
+  "defsym": {
+   "Q1": 952693737,
+   "Q3": 2854488017,
+   "Q5": 445710336
+  },
+  "words": [
+   952693737,
+   2854488017,
+   445710336
+  ],
+  "bits": [
+   952693737,
+   2854488017,
+   445710336
+  ],
+  "shared": true
+ },
+ {
+  "name": "q5_line_q_limits",
+  "form": "Q5",
+  "load": "line",
+  "family": "quantized",
+  "point": "limits",
+  "src": "kernel/forms/q5_line.s",
+  "defsym": {
+   "Q1": 952692736,
+   "Q3": 2854486016,
+   "Q5": 445710336
+  },
+  "words": [
+   952692736,
+   2854486016,
+   445710336
+  ],
+  "bits": [
+   952692736,
+   2854486016,
+   445710336
+  ],
+  "shared": true
+ },
+ {
+  "name": "q5_line_a8_limits",
+  "form": "Q5",
+  "load": "line",
+  "family": "all 8-bit",
+  "point": "limits",
+  "src": "kernel/forms/q5_line.s",
+  "defsym": {
+   "Q1": 952696832,
+   "Q3": 2854486016,
+   "Q5": 445644800
+  },
+  "words": [
+   952696832,
+   2854486016,
+   445644800
+  ],
+  "bits": [
+   952696832,
+   2854486016,
+   445644800
+  ],
+  "shared": true
+ },
+ {
+  "name": "q5_code_free_limits",
+  "form": "Q5",
+  "load": "code",
+  "family": "free",
+  "point": "limits",
+  "src": "kernel/forms/q5_code.s",
+  "defsym": {
+   "Q1": 952693254,
+   "Q3": 2854484613,
+   "Q5": 445690832
+  },
+  "words": [],
+  "bits": [
+   952693254,
+   2854484613,
+   445690832
+  ],
+  "shared": true
+ },
+ {
+  "name": "q5_code_t8_limits",
+  "form": "Q5",
+  "load": "code",
+  "family": "top 8-bit",
+  "point": "limits",
+  "src": "kernel/forms/q5_code.s",
+  "defsym": {
+   "Q1": 952693737,
+   "Q3": 2854488017,
+   "Q5": 445710336
+  },
+  "words": [],
+  "bits": [
+   952693737,
+   2854488017,
+   445710336
+  ],
+  "shared": true
+ },
+ {
+  "name": "q5_code_q_limits",
+  "form": "Q5",
+  "load": "code",
+  "family": "quantized",
+  "point": "limits",
+  "src": "kernel/forms/q5_code.s",
+  "defsym": {
+   "Q1": 952692736,
+   "Q3": 2854486016,
+   "Q5": 445710336
+  },
+  "words": [],
+  "bits": [
+   952692736,
+   2854486016,
+   445710336
+  ],
+  "shared": true
+ },
+ {
+  "name": "q5_code_a8_limits",
+  "form": "Q5",
+  "load": "code",
+  "family": "all 8-bit",
+  "point": "limits",
+  "src": "kernel/forms/q5_code.s",
+  "defsym": {
+   "Q1": 952696832,
+   "Q3": 2854486016,
+   "Q5": 445644800
+  },
+  "words": [],
+  "bits": [
+   952696832,
+   2854486016,
+   445644800
+  ],
+  "shared": true
+ },
+ {
+  "name": "q7_line_free_limits",
+  "form": "Q7",
+  "load": "line",
+  "family": "free",
+  "point": "limits",
+  "src": "kernel/forms/q7_line.s",
+  "defsym": {
+   "Q1": 952700667,
+   "Q3": 2854572219,
+   "Q5": 446840459,
+   "Q7": 2324334218
+  },
+  "words": [
+   952700667,
+   2854572219,
+   446840459,
+   2324334218
+  ],
+  "bits": [
+   952700667,
+   2854572219,
+   446840459,
+   2324334218
+  ],
+  "shared": true
+ },
+ {
+  "name": "q7_line_t8_limits",
+  "form": "Q7",
+  "load": "line",
+  "family": "top 8-bit",
+  "point": "limits",
+  "src": "kernel/forms/q7_line.s",
+  "defsym": {
+   "Q1": 952700626,
+   "Q3": 2854571793,
+   "Q5": 446835551,
+   "Q7": 2324299776
+  },
+  "words": [
+   952700626,
+   2854571793,
+   446835551,
+   2324299776
+  ],
+  "bits": [
+   952700626,
+   2854571793,
+   446835551,
+   2324299776
+  ],
+  "shared": true
+ },
+ {
+  "name": "q7_line_q_limits",
+  "form": "Q7",
+  "load": "line",
+  "family": "quantized",
+  "point": "limits",
+  "src": "kernel/forms/q7_line.s",
+  "defsym": {
+   "Q1": 952697205,
+   "Q3": 2854551552,
+   "Q5": 446824448,
+   "Q7": 2326003712
+  },
+  "words": [
+   952697205,
+   2854551552,
+   446824448,
+   2326003712
+  ],
+  "bits": [
+   952697205,
+   2854551552,
+   446824448,
+   2326003712
+  ],
+  "shared": true
+ },
+ {
+  "name": "q7_line_a8_limits",
+  "form": "Q7",
+  "load": "line",
+  "family": "all 8-bit",
+  "point": "limits",
+  "src": "kernel/forms/q7_line.s",
+  "defsym": {
+   "Q1": 952696832,
+   "Q3": 2854551552,
+   "Q5": 446562304,
+   "Q7": 2319450112
+  },
+  "words": [
+   952696832,
+   2854551552,
+   446562304,
+   2319450112
+  ],
+  "bits": [
+   952696832,
+   2854551552,
+   446562304,
+   2319450112
+  ],
+  "shared": true
+ },
+ {
+  "name": "q7_code_free_limits",
+  "form": "Q7",
+  "load": "code",
+  "family": "free",
+  "point": "limits",
+  "src": "kernel/forms/q7_code.s",
+  "defsym": {
+   "Q1": 952700667,
+   "Q3": 2854572219,
+   "Q5": 446840459,
+   "Q7": 2324334218
+  },
+  "words": [],
+  "bits": [
+   952700667,
+   2854572219,
+   446840459,
+   2324334218
+  ],
+  "shared": true
+ },
+ {
+  "name": "q7_code_t8_limits",
+  "form": "Q7",
+  "load": "code",
+  "family": "top 8-bit",
+  "point": "limits",
+  "src": "kernel/forms/q7_code.s",
+  "defsym": {
+   "Q1": 952700626,
+   "Q3": 2854571793,
+   "Q5": 446835551,
+   "Q7": 2324299776
+  },
+  "words": [],
+  "bits": [
+   952700626,
+   2854571793,
+   446835551,
+   2324299776
+  ],
+  "shared": true
+ },
+ {
+  "name": "q7_code_q_limits",
+  "form": "Q7",
+  "load": "code",
+  "family": "quantized",
+  "point": "limits",
+  "src": "kernel/forms/q7_code.s",
+  "defsym": {
+   "Q1": 952697205,
+   "Q3": 2854551552,
+   "Q5": 446824448,
+   "Q7": 2326003712
+  },
+  "words": [],
+  "bits": [
+   952697205,
+   2854551552,
+   446824448,
+   2326003712
+  ],
+  "shared": true
+ },
+ {
+  "name": "q7_code_a8_limits",
+  "form": "Q7",
+  "load": "code",
+  "family": "all 8-bit",
+  "point": "limits",
+  "src": "kernel/forms/q7_code.s",
+  "defsym": {
+   "Q1": 952696832,
+   "Q3": 2854551552,
+   "Q5": 446562304,
+   "Q7": 2319450112
+  },
+  "words": [],
+  "bits": [
+   952696832,
+   2854551552,
+   446562304,
+   2319450112
+  ],
+  "shared": true
+ },
+ {
+  "name": "s3sqrt_line_free_limits",
+  "form": "S3+sqrt",
+  "load": "line",
+  "family": "free",
+  "point": "limits",
+  "src": "kernel/forms/s3sqrt_line.s",
+  "defsym": {
+   "S1": 952688166,
+   "S3": 2854163171
+  },
+  "words": [
+   952688166,
+   2854163171,
+   1065353216
+  ],
+  "bits": [
+   952688166,
+   2854163171
+  ],
+  "shared": true
+ },
+ {
+  "name": "s3sqrt_line_t8_limits",
+  "form": "S3+sqrt",
+  "load": "line",
+  "family": "top 8-bit",
+  "point": "limits",
+  "src": "kernel/forms/s3sqrt_line.s",
+  "defsym": {
+   "S1": 952687644,
+   "S3": 2854158336
+  },
+  "words": [
+   952687644,
+   2854158336,
+   1065353216
+  ],
+  "bits": [
+   952687644,
+   2854158336
+  ],
+  "shared": true
+ },
+ {
+  "name": "s3sqrt_line_q_limits",
+  "form": "S3+sqrt",
+  "load": "line",
+  "family": "quantized",
+  "point": "limits",
+  "src": "kernel/forms/s3sqrt_line.s",
+  "defsym": {
+   "S1": 952687644,
+   "S3": 2854158336
+  },
+  "words": [
+   952687644,
+   2854158336,
+   1065353216
+  ],
+  "bits": [
+   952687644,
+   2854158336
+  ],
+  "shared": true
+ },
+ {
+  "name": "s3sqrt_line_a8_limits",
+  "form": "S3+sqrt",
+  "load": "line",
+  "family": "all 8-bit",
+  "point": "limits",
+  "src": "kernel/forms/s3sqrt_line.s",
+  "defsym": {
+   "S1": 952696832,
+   "S3": 2854223872
+  },
+  "words": [
+   952696832,
+   2854223872,
+   1065353216
+  ],
+  "bits": [
+   952696832,
+   2854223872
+  ],
+  "shared": true
+ },
+ {
+  "name": "s3sqrt_code_free_limits",
+  "form": "S3+sqrt",
+  "load": "code",
+  "family": "free",
+  "point": "limits",
+  "src": "kernel/forms/s3sqrt_code.s",
+  "defsym": {
+   "S1": 952688166,
+   "S3": 2854163171
+  },
+  "words": [],
+  "bits": [
+   952688166,
+   2854163171
+  ],
+  "shared": true
+ },
+ {
+  "name": "s3sqrt_code_t8_limits",
+  "form": "S3+sqrt",
+  "load": "code",
+  "family": "top 8-bit",
+  "point": "limits",
+  "src": "kernel/forms/s3sqrt_code.s",
+  "defsym": {
+   "S1": 952687644,
+   "S3": 2854158336
+  },
+  "words": [],
+  "bits": [
+   952687644,
+   2854158336
+  ],
+  "shared": true
+ },
+ {
+  "name": "s3sqrt_code_q_limits",
+  "form": "S3+sqrt",
+  "load": "code",
+  "family": "quantized",
+  "point": "limits",
+  "src": "kernel/forms/s3sqrt_code.s",
+  "defsym": {
+   "S1": 952687644,
+   "S3": 2854158336
+  },
+  "words": [],
+  "bits": [
+   952687644,
+   2854158336
+  ],
+  "shared": true
+ },
+ {
+  "name": "s3sqrt_code_a8_limits",
+  "form": "S3+sqrt",
+  "load": "code",
+  "family": "all 8-bit",
+  "point": "limits",
+  "src": "kernel/forms/s3sqrt_code.s",
+  "defsym": {
+   "S1": 952696832,
+   "S3": 2854223872
+  },
+  "words": [],
+  "bits": [
+   952696832,
+   2854223872
+  ],
+  "shared": true
+ },
+ {
+  "name": "s3c2_line_free_limits",
+  "form": "S3C2",
+  "load": "line",
+  "family": "free",
+  "point": "limits",
+  "src": "kernel/forms/s3c2_line.s",
+  "defsym": {
+   "S1": 952478452,
+   "S3": 2851702667,
+   "C2": 2979535807
+  },
+  "words": [
+   952478452,
+   2851702667,
+   2979535807,
+   1065353216
+  ],
+  "bits": [
+   952478452,
+   2851702667,
+   2979535807
+  ],
+  "shared": true
+ },
+ {
+  "name": "s3c2_line_t8_limits",
+  "form": "S3C2",
+  "load": "line",
+  "family": "top 8-bit",
+  "point": "limits",
+  "src": "kernel/forms/s3c2_line.s",
+  "defsym": {
+   "S1": 952473096,
+   "S3": 2851667968,
+   "C2": 2979528704
+  },
+  "words": [
+   952473096,
+   2851667968,
+   2979528704,
+   1065353216
+  ],
+  "bits": [
+   952473096,
+   2851667968,
+   2979528704
+  ],
+  "shared": true
+ },
+ {
+  "name": "s3c2_line_q_limits",
+  "form": "S3C2",
+  "load": "line",
+  "family": "quantized",
+  "point": "limits",
+  "src": "kernel/forms/s3c2_line.s",
+  "defsym": {
+   "S1": 952473096,
+   "S3": 2851667968,
+   "C2": 2979528704
+  },
+  "words": [
+   952473096,
+   2851667968,
+   2979528704,
+   1065353216
+  ],
+  "bits": [
+   952473096,
+   2851667968,
+   2979528704
+  ],
+  "shared": true
+ },
+ {
+  "name": "s3c2_line_a8_limits",
+  "form": "S3C2",
+  "load": "line",
+  "family": "all 8-bit",
+  "point": "limits",
+  "src": "kernel/forms/s3c2_line.s",
+  "defsym": {
+   "S1": 952500224,
+   "S3": 2852126720,
+   "C2": 2979528704
+  },
+  "words": [
+   952500224,
+   2852126720,
+   2979528704,
+   1065353216
+  ],
+  "bits": [
+   952500224,
+   2852126720,
+   2979528704
+  ],
+  "shared": true
+ },
+ {
+  "name": "s3c2_code_free_limits",
+  "form": "S3C2",
+  "load": "code",
+  "family": "free",
+  "point": "limits",
+  "src": "kernel/forms/s3c2_code.s",
+  "defsym": {
+   "S1": 952478452,
+   "S3": 2851702667,
+   "C2": 2979535807
+  },
+  "words": [],
+  "bits": [
+   952478452,
+   2851702667,
+   2979535807
+  ],
+  "shared": true
+ },
+ {
+  "name": "s3c2_code_t8_limits",
+  "form": "S3C2",
+  "load": "code",
+  "family": "top 8-bit",
+  "point": "limits",
+  "src": "kernel/forms/s3c2_code.s",
+  "defsym": {
+   "S1": 952473096,
+   "S3": 2851667968,
+   "C2": 2979528704
+  },
+  "words": [],
+  "bits": [
+   952473096,
+   2851667968,
+   2979528704
+  ],
+  "shared": true
+ },
+ {
+  "name": "s3c2_code_q_limits",
+  "form": "S3C2",
+  "load": "code",
+  "family": "quantized",
+  "point": "limits",
+  "src": "kernel/forms/s3c2_code.s",
+  "defsym": {
+   "S1": 952473096,
+   "S3": 2851667968,
+   "C2": 2979528704
+  },
+  "words": [],
+  "bits": [
+   952473096,
+   2851667968,
+   2979528704
+  ],
+  "shared": true
+ },
+ {
+  "name": "s3c2_code_a8_limits",
+  "form": "S3C2",
+  "load": "code",
+  "family": "all 8-bit",
+  "point": "limits",
+  "src": "kernel/forms/s3c2_code.s",
+  "defsym": {
+   "S1": 952500224,
+   "S3": 2852126720,
+   "C2": 2979528704
+  },
+  "words": [],
+  "bits": [
+   952500224,
+   2852126720,
+   2979528704
+  ],
+  "shared": true
+ },
+ {
+  "name": "s3c4_line_free_limits",
+  "form": "S3C4",
+  "load": "line",
+  "family": "free",
+  "point": "limits",
+  "src": "kernel/forms/s3c4_line.s",
+  "defsym": {
+   "S1": 952681144,
+   "S3": 2854068447,
+   "C2": 2979906650,
+   "C4": 578162848
+  },
+  "words": [
+   952681144,
+   2854068447,
+   2979906650,
+   1065353216
+  ],
+  "bits": [
+   952681144,
+   2854068447,
+   2979906650,
+   578162848
+  ],
+  "shared": true
+ },
+ {
+  "name": "s3c4_line_t8_limits",
+  "form": "S3C4",
+  "load": "line",
+  "family": "top 8-bit",
+  "point": "limits",
+  "src": "kernel/forms/s3c4_line.s",
+  "defsym": {
+   "S1": 952681728,
+   "S3": 2854092800,
+   "C2": 2979906062,
+   "C4": 578289664
+  },
+  "words": [
+   952681728,
+   2854092800,
+   2979906062,
+   1065353216
+  ],
+  "bits": [
+   952681728,
+   2854092800,
+   2979906062,
+   578289664
+  ],
+  "shared": true
+ },
+ {
+  "name": "s3c4_line_q_limits",
+  "form": "S3C4",
+  "load": "line",
+  "family": "quantized",
+  "point": "limits",
+  "src": "kernel/forms/s3c4_line.s",
+  "defsym": {
+   "S1": 952688322,
+   "S3": 2854158336,
+   "C2": 2979921920,
+   "C4": 578879488
+  },
+  "words": [
+   952688322,
+   2854158336,
+   2979921920,
+   1065353216
+  ],
+  "bits": [
+   952688322,
+   2854158336,
+   2979921920,
+   578879488
+  ],
+  "shared": true
+ },
+ {
+  "name": "s3c4_line_a8_limits",
+  "form": "S3C4",
+  "load": "line",
+  "family": "all 8-bit",
+  "point": "limits",
+  "src": "kernel/forms/s3c4_line.s",
+  "defsym": {
+   "S1": 952696832,
+   "S3": 2854223872,
+   "C2": 2979921920,
+   "C4": 578813952
+  },
+  "words": [
+   952696832,
+   2854223872,
+   2979921920,
+   1065353216
+  ],
+  "bits": [
+   952696832,
+   2854223872,
+   2979921920,
+   578813952
+  ],
+  "shared": true
+ },
+ {
+  "name": "s3c4_code_free_limits",
+  "form": "S3C4",
+  "load": "code",
+  "family": "free",
+  "point": "limits",
+  "src": "kernel/forms/s3c4_code.s",
+  "defsym": {
+   "S1": 952681144,
+   "S3": 2854068447,
+   "C2": 2979906650,
+   "C4": 578162848
+  },
+  "words": [],
+  "bits": [
+   952681144,
+   2854068447,
+   2979906650,
+   578162848
+  ],
+  "shared": true
+ },
+ {
+  "name": "s3c4_code_t8_limits",
+  "form": "S3C4",
+  "load": "code",
+  "family": "top 8-bit",
+  "point": "limits",
+  "src": "kernel/forms/s3c4_code.s",
+  "defsym": {
+   "S1": 952681728,
+   "S3": 2854092800,
+   "C2": 2979906062,
+   "C4": 578289664
+  },
+  "words": [],
+  "bits": [
+   952681728,
+   2854092800,
+   2979906062,
+   578289664
+  ],
+  "shared": true
+ },
+ {
+  "name": "s3c4_code_q_limits",
+  "form": "S3C4",
+  "load": "code",
+  "family": "quantized",
+  "point": "limits",
+  "src": "kernel/forms/s3c4_code.s",
+  "defsym": {
+   "S1": 952688322,
+   "S3": 2854158336,
+   "C2": 2979921920,
+   "C4": 578879488
+  },
+  "words": [],
+  "bits": [
+   952688322,
+   2854158336,
+   2979921920,
+   578879488
+  ],
+  "shared": true
+ },
+ {
+  "name": "s3c4_code_a8_limits",
+  "form": "S3C4",
+  "load": "code",
+  "family": "all 8-bit",
+  "point": "limits",
+  "src": "kernel/forms/s3c4_code.s",
+  "defsym": {
+   "S1": 952696832,
+   "S3": 2854223872,
+   "C2": 2979921920,
+   "C4": 578813952
+  },
+  "words": [],
+  "bits": [
+   952696832,
+   2854223872,
+   2979921920,
+   578813952
+  ],
+  "shared": true
+ },
+ {
+  "name": "s5sqrt_line_free_limits",
+  "form": "S5+sqrt",
+  "load": "line",
+  "family": "free",
+  "point": "limits",
+  "src": "kernel/forms/s5sqrt_line.s",
+  "defsym": {
+   "S1": 952701046,
+   "S3": 2854578825,
+   "S5": 446826067
+  },
+  "words": [
+   952701046,
+   2854578825,
+   446826067,
+   1065353216
+  ],
+  "bits": [
+   952701046,
+   2854578825,
+   446826067
+  ],
+  "shared": true
+ },
+ {
+  "name": "s5sqrt_line_t8_limits",
+  "form": "S5+sqrt",
+  "load": "line",
+  "family": "top 8-bit",
+  "point": "limits",
+  "src": "kernel/forms/s5sqrt_line.s",
+  "defsym": {
+   "S1": 952702205,
+   "S3": 2854576659,
+   "S5": 446300160
+  },
+  "words": [
+   952702205,
+   2854576659,
+   446300160,
+   1065353216
+  ],
+  "bits": [
+   952702205,
+   2854576659,
+   446300160
+  ],
+  "shared": true
+ },
+ {
+  "name": "s5sqrt_line_q_limits",
+  "form": "S5+sqrt",
+  "load": "line",
+  "family": "quantized",
+  "point": "limits",
+  "src": "kernel/forms/s5sqrt_line.s",
+  "defsym": {
+   "S1": 952701041,
+   "S3": 2854551552,
+   "S5": 445841408
+  },
+  "words": [
+   952701041,
+   2854551552,
+   445841408,
+   1065353216
+  ],
+  "bits": [
+   952701041,
+   2854551552,
+   445841408
+  ],
+  "shared": true
+ },
+ {
+  "name": "s5sqrt_line_a8_limits",
+  "form": "S5+sqrt",
+  "load": "line",
+  "family": "all 8-bit",
+  "point": "limits",
+  "src": "kernel/forms/s5sqrt_line.s",
+  "defsym": {
+   "S1": 952696832,
+   "S3": 2854486016,
+   "S5": 445054976
+  },
+  "words": [
+   952696832,
+   2854486016,
+   445054976,
+   1065353216
+  ],
+  "bits": [
+   952696832,
+   2854486016,
+   445054976
+  ],
+  "shared": true
+ },
+ {
+  "name": "s5sqrt_code_free_limits",
+  "form": "S5+sqrt",
+  "load": "code",
+  "family": "free",
+  "point": "limits",
+  "src": "kernel/forms/s5sqrt_code.s",
+  "defsym": {
+   "S1": 952701046,
+   "S3": 2854578825,
+   "S5": 446826067
+  },
+  "words": [],
+  "bits": [
+   952701046,
+   2854578825,
+   446826067
+  ],
+  "shared": true
+ },
+ {
+  "name": "s5sqrt_code_t8_limits",
+  "form": "S5+sqrt",
+  "load": "code",
+  "family": "top 8-bit",
+  "point": "limits",
+  "src": "kernel/forms/s5sqrt_code.s",
+  "defsym": {
+   "S1": 952702205,
+   "S3": 2854576659,
+   "S5": 446300160
+  },
+  "words": [],
+  "bits": [
+   952702205,
+   2854576659,
+   446300160
+  ],
+  "shared": true
+ },
+ {
+  "name": "s5sqrt_code_q_limits",
+  "form": "S5+sqrt",
+  "load": "code",
+  "family": "quantized",
+  "point": "limits",
+  "src": "kernel/forms/s5sqrt_code.s",
+  "defsym": {
+   "S1": 952701041,
+   "S3": 2854551552,
+   "S5": 445841408
+  },
+  "words": [],
+  "bits": [
+   952701041,
+   2854551552,
+   445841408
+  ],
+  "shared": true
+ },
+ {
+  "name": "s5sqrt_code_a8_limits",
+  "form": "S5+sqrt",
+  "load": "code",
+  "family": "all 8-bit",
+  "point": "limits",
+  "src": "kernel/forms/s5sqrt_code.s",
+  "defsym": {
+   "S1": 952696832,
+   "S3": 2854486016,
+   "S5": 445054976
+  },
+  "words": [],
+  "bits": [
+   952696832,
+   2854486016,
+   445054976
+  ],
+  "shared": true
+ },
+ {
+  "name": "s5c4_line_free_limits",
+  "form": "S5C4",
+  "load": "line",
+  "family": "free",
+  "point": "limits",
+  "src": "kernel/forms/s5c4_line.s",
+  "defsym": {
+   "S1": 952698793,
+   "S3": 2854504724,
+   "S5": 444907055,
+   "C2": 2979912964,
+   "C4": 578627862
+  },
+  "words": [
+   952698793,
+   2854504724,
+   2979912964,
+   1065353216
+  ],
+  "bits": [
+   952698793,
+   2854504724,
+   444907055,
+   2979912964,
+   578627862
+  ],
+  "shared": true
+ },
+ {
+  "name": "s5c4_line_t8_limits",
+  "form": "S5C4",
+  "load": "line",
+  "family": "top 8-bit",
+  "point": "limits",
+  "src": "kernel/forms/s5c4_line.s",
+  "defsym": {
+   "S1": 952698850,
+   "S3": 2854504922,
+   "S5": 444923904,
+   "C2": 2979913050,
+   "C4": 578617344
+  },
+  "words": [
+   952698850,
+   2854504922,
+   2979913050,
+   1065353216
+  ],
+  "bits": [
+   952698850,
+   2854504922,
+   444923904,
+   2979913050,
+   578617344
+  ],
+  "shared": true
+ },
+ {
+  "name": "s5c4_line_q_limits",
+  "form": "S5C4",
+  "load": "line",
+  "family": "quantized",
+  "point": "limits",
+  "src": "kernel/forms/s5c4_line.s",
+  "defsym": {
+   "S1": 952703335,
+   "S3": 2854551552,
+   "S5": 445120512,
+   "C2": 2979921920,
+   "C4": 578879488
+  },
+  "words": [
+   952703335,
+   2854551552,
+   2979921920,
+   1065353216
+  ],
+  "bits": [
+   952703335,
+   2854551552,
+   445120512,
+   2979921920,
+   578879488
+  ],
+  "shared": true
+ },
+ {
+  "name": "s5c4_line_a8_limits",
+  "form": "S5C4",
+  "load": "line",
+  "family": "all 8-bit",
+  "point": "limits",
+  "src": "kernel/forms/s5c4_line.s",
+  "defsym": {
+   "S1": 952696832,
+   "S3": 2854420480,
+   "S5": 440336384,
+   "C2": 2979921920,
+   "C4": 578879488
+  },
+  "words": [
+   952696832,
+   2854420480,
+   2979921920,
+   1065353216
+  ],
+  "bits": [
+   952696832,
+   2854420480,
+   440336384,
+   2979921920,
+   578879488
+  ],
+  "shared": true
+ },
+ {
+  "name": "s5c4_code_free_limits",
+  "form": "S5C4",
+  "load": "code",
+  "family": "free",
+  "point": "limits",
+  "src": "kernel/forms/s5c4_code.s",
+  "defsym": {
+   "S1": 952698793,
+   "S3": 2854504724,
+   "S5": 444907055,
+   "C2": 2979912964,
+   "C4": 578627862
+  },
+  "words": [],
+  "bits": [
+   952698793,
+   2854504724,
+   444907055,
+   2979912964,
+   578627862
+  ],
+  "shared": true
+ },
+ {
+  "name": "s5c4_code_t8_limits",
+  "form": "S5C4",
+  "load": "code",
+  "family": "top 8-bit",
+  "point": "limits",
+  "src": "kernel/forms/s5c4_code.s",
+  "defsym": {
+   "S1": 952698850,
+   "S3": 2854504922,
+   "S5": 444923904,
+   "C2": 2979913050,
+   "C4": 578617344
+  },
+  "words": [],
+  "bits": [
+   952698850,
+   2854504922,
+   444923904,
+   2979913050,
+   578617344
+  ],
+  "shared": true
+ },
+ {
+  "name": "s5c4_code_q_limits",
+  "form": "S5C4",
+  "load": "code",
+  "family": "quantized",
+  "point": "limits",
+  "src": "kernel/forms/s5c4_code.s",
+  "defsym": {
+   "S1": 952703335,
+   "S3": 2854551552,
+   "S5": 445120512,
+   "C2": 2979921920,
+   "C4": 578879488
+  },
+  "words": [],
+  "bits": [
+   952703335,
+   2854551552,
+   445120512,
+   2979921920,
+   578879488
+  ],
+  "shared": true
+ },
+ {
+  "name": "s5c4_code_a8_limits",
+  "form": "S5C4",
+  "load": "code",
+  "family": "all 8-bit",
+  "point": "limits",
+  "src": "kernel/forms/s5c4_code.s",
+  "defsym": {
+   "S1": 952696832,
+   "S3": 2854420480,
+   "S5": 440336384,
+   "C2": 2979921920,
+   "C4": 578879488
+  },
+  "words": [],
+  "bits": [
+   952696832,
+   2854420480,
+   440336384,
+   2979921920,
+   578879488
+  ],
+  "shared": true
+ },
+ {
+  "name": "s5c6_line_free_limits",
+  "form": "S5C6",
+  "load": "line",
+  "family": "free",
+  "point": "limits",
+  "src": "kernel/forms/s5c6_line.s",
+  "defsym": {
+   "S1": 952700824,
+   "S3": 2854571310,
+   "S5": 446630818,
+   "C2": 2979916160,
+   "C4": 578928511,
+   "C6": 2460084566
+  },
+  "words": [
+   952700824,
+   2854571310,
+   2979916160,
+   578928511
+  ],
+  "bits": [
+   952700824,
+   2854571310,
+   446630818,
+   2979916160,
+   578928511,
+   2460084566
+  ],
+  "shared": true
+ },
+ {
+  "name": "s5c6_line_t8_limits",
+  "form": "S5C6",
+  "load": "line",
+  "family": "top 8-bit",
+  "point": "limits",
+  "src": "kernel/forms/s5c6_line.s",
+  "defsym": {
+   "S1": 952700825,
+   "S3": 2854571369,
+   "S5": 446627840,
+   "C2": 2979916159,
+   "C4": 578924898,
+   "C6": 2459828224
+  },
+  "words": [
+   952700825,
+   2854571369,
+   2979916159,
+   578924898
+  ],
+  "bits": [
+   952700825,
+   2854571369,
+   446627840,
+   2979916159,
+   578924898,
+   2459828224
+  ],
+  "shared": true
+ },
+ {
+  "name": "s5c6_line_q_limits",
+  "form": "S5C6",
+  "load": "line",
+  "family": "quantized",
+  "point": "limits",
+  "src": "kernel/forms/s5c6_line.s",
+  "defsym": {
+   "S1": 952703954,
+   "S3": 2854617088,
+   "S5": 447086592,
+   "C2": 2979921920,
+   "C4": 579141632,
+   "C6": 2466447360
+  },
+  "words": [
+   952703954,
+   2854617088,
+   2979921920,
+   579141632
+  ],
+  "bits": [
+   952703954,
+   2854617088,
+   447086592,
+   2979921920,
+   579141632,
+   2466447360
+  ],
+  "shared": true
+ },
+ {
+  "name": "s5c6_line_a8_limits",
+  "form": "S5C6",
+  "load": "line",
+  "family": "all 8-bit",
+  "point": "limits",
+  "src": "kernel/forms/s5c6_line.s",
+  "defsym": {
+   "S1": 952696832,
+   "S3": 2854486016,
+   "S5": 444989440,
+   "C2": 2979921920,
+   "C4": 579207168,
+   "C6": 2468872192
+  },
+  "words": [
+   952696832,
+   2854486016,
+   2979921920,
+   579207168
+  ],
+  "bits": [
+   952696832,
+   2854486016,
+   444989440,
+   2979921920,
+   579207168,
+   2468872192
+  ],
+  "shared": true
+ },
+ {
+  "name": "s5c6_code_free_limits",
+  "form": "S5C6",
+  "load": "code",
+  "family": "free",
+  "point": "limits",
+  "src": "kernel/forms/s5c6_code.s",
+  "defsym": {
+   "S1": 952700824,
+   "S3": 2854571310,
+   "S5": 446630818,
+   "C2": 2979916160,
+   "C4": 578928511,
+   "C6": 2460084566
+  },
+  "words": [],
+  "bits": [
+   952700824,
+   2854571310,
+   446630818,
+   2979916160,
+   578928511,
+   2460084566
+  ],
+  "shared": true
+ },
+ {
+  "name": "s5c6_code_t8_limits",
+  "form": "S5C6",
+  "load": "code",
+  "family": "top 8-bit",
+  "point": "limits",
+  "src": "kernel/forms/s5c6_code.s",
+  "defsym": {
+   "S1": 952700825,
+   "S3": 2854571369,
+   "S5": 446627840,
+   "C2": 2979916159,
+   "C4": 578924898,
+   "C6": 2459828224
+  },
+  "words": [],
+  "bits": [
+   952700825,
+   2854571369,
+   446627840,
+   2979916159,
+   578924898,
+   2459828224
+  ],
+  "shared": true
+ },
+ {
+  "name": "s5c6_code_q_limits",
+  "form": "S5C6",
+  "load": "code",
+  "family": "quantized",
+  "point": "limits",
+  "src": "kernel/forms/s5c6_code.s",
+  "defsym": {
+   "S1": 952703954,
+   "S3": 2854617088,
+   "S5": 447086592,
+   "C2": 2979921920,
+   "C4": 579141632,
+   "C6": 2466447360
+  },
+  "words": [],
+  "bits": [
+   952703954,
+   2854617088,
+   447086592,
+   2979921920,
+   579141632,
+   2466447360
+  ],
+  "shared": true
+ },
+ {
+  "name": "s5c6_code_a8_limits",
+  "form": "S5C6",
+  "load": "code",
+  "family": "all 8-bit",
+  "point": "limits",
+  "src": "kernel/forms/s5c6_code.s",
+  "defsym": {
+   "S1": 952696832,
+   "S3": 2854486016,
+   "S5": 444989440,
+   "C2": 2979921920,
+   "C4": 579207168,
+   "C6": 2468872192
+  },
+  "words": [],
+  "bits": [
+   952696832,
+   2854486016,
+   444989440,
+   2979921920,
+   579207168,
+   2468872192
+  ],
+  "shared": true
+ },
+ {
+  "name": "s7c6_line_free_limits",
+  "form": "S7C6",
+  "load": "line",
+  "family": "free",
+  "point": "limits",
+  "src": "kernel/forms/s7c6_line.s",
+  "defsym": {
+   "S1": 952700876,
+   "S3": 2854574852,
+   "S5": 446863584,
+   "S7": 2323948555,
+   "C2": 2979916240,
+   "C4": 578934674,
+   "C6": 2460417649
+  },
+  "words": [
+   952700876,
+   2854574852,
+   2979916240,
+   578934674
+  ],
+  "bits": [
+   952700876,
+   2854574852,
+   446863584,
+   2323948555,
+   2979916240,
+   578934674,
+   2460417649
+  ],
+  "shared": true
+ },
+ {
+  "name": "s7c6_line_t8_limits",
+  "form": "S7C6",
+  "load": "line",
+  "family": "top 8-bit",
+  "point": "limits",
+  "src": "kernel/forms/s7c6_line.s",
+  "defsym": {
+   "S1": 952700888,
+   "S3": 2854575263,
+   "S5": 446876876,
+   "S7": 2324103168,
+   "C2": 2979916258,
+   "C4": 578935901,
+   "C6": 2460483584
+  },
+  "words": [
+   952700888,
+   2854575263,
+   2979916258,
+   578935901
+  ],
+  "bits": [
+   952700888,
+   2854575263,
+   446876876,
+   2324103168,
+   2979916258,
+   578935901,
+   2460483584
+  ],
+  "shared": true
+ },
+ {
+  "name": "s7c6_line_q_limits",
+  "form": "S7C6",
+  "load": "line",
+  "family": "quantized",
+  "point": "limits",
+  "src": "kernel/forms/s7c6_line.s",
+  "defsym": {
+   "S1": 952703236,
+   "S3": 2854617088,
+   "S5": 447414272,
+   "S7": 2301362176,
+   "C2": 2979921920,
+   "C4": 579207168,
+   "C6": 2469003264
+  },
+  "words": [
+   952703236,
+   2854617088,
+   2979921920,
+   579207168
+  ],
+  "bits": [
+   952703236,
+   2854617088,
+   447414272,
+   2301362176,
+   2979921920,
+   579207168,
+   2469003264
+  ],
+  "shared": true
+ },
+ {
+  "name": "s7c6_line_a8_limits",
+  "form": "S7C6",
+  "load": "line",
+  "family": "all 8-bit",
+  "point": "limits",
+  "src": "kernel/forms/s7c6_line.s",
+  "defsym": {
+   "S1": 952696832,
+   "S3": 2854486016,
+   "S5": 445120512,
+   "S7": 2323578880,
+   "C2": 2979921920,
+   "C4": 579272704,
+   "C6": 2471755776
+  },
+  "words": [
+   952696832,
+   2854486016,
+   2979921920,
+   579272704
+  ],
+  "bits": [
+   952696832,
+   2854486016,
+   445120512,
+   2323578880,
+   2979921920,
+   579272704,
+   2471755776
+  ],
+  "shared": true
+ },
+ {
+  "name": "s7c6_code_free_limits",
+  "form": "S7C6",
+  "load": "code",
+  "family": "free",
+  "point": "limits",
+  "src": "kernel/forms/s7c6_code.s",
+  "defsym": {
+   "S1": 952700876,
+   "S3": 2854574852,
+   "S5": 446863584,
+   "S7": 2323948555,
+   "C2": 2979916240,
+   "C4": 578934674,
+   "C6": 2460417649
+  },
+  "words": [],
+  "bits": [
+   952700876,
+   2854574852,
+   446863584,
+   2323948555,
+   2979916240,
+   578934674,
+   2460417649
+  ],
+  "shared": true
+ },
+ {
+  "name": "s7c6_code_t8_limits",
+  "form": "S7C6",
+  "load": "code",
+  "family": "top 8-bit",
+  "point": "limits",
+  "src": "kernel/forms/s7c6_code.s",
+  "defsym": {
+   "S1": 952700888,
+   "S3": 2854575263,
+   "S5": 446876876,
+   "S7": 2324103168,
+   "C2": 2979916258,
+   "C4": 578935901,
+   "C6": 2460483584
+  },
+  "words": [],
+  "bits": [
+   952700888,
+   2854575263,
+   446876876,
+   2324103168,
+   2979916258,
+   578935901,
+   2460483584
+  ],
+  "shared": true
+ },
+ {
+  "name": "s7c6_code_q_limits",
+  "form": "S7C6",
+  "load": "code",
+  "family": "quantized",
+  "point": "limits",
+  "src": "kernel/forms/s7c6_code.s",
+  "defsym": {
+   "S1": 952703236,
+   "S3": 2854617088,
+   "S5": 447414272,
+   "S7": 2301362176,
+   "C2": 2979921920,
+   "C4": 579207168,
+   "C6": 2469003264
+  },
+  "words": [],
+  "bits": [
+   952703236,
+   2854617088,
+   447414272,
+   2301362176,
+   2979921920,
+   579207168,
+   2469003264
+  ],
+  "shared": true
+ },
+ {
+  "name": "s7c6_code_a8_limits",
+  "form": "S7C6",
+  "load": "code",
+  "family": "all 8-bit",
+  "point": "limits",
+  "src": "kernel/forms/s7c6_code.s",
+  "defsym": {
+   "S1": 952696832,
+   "S3": 2854486016,
+   "S5": 445120512,
+   "S7": 2323578880,
+   "C2": 2979921920,
+   "C4": 579272704,
+   "C6": 2471755776
+  },
+  "words": [],
+  "bits": [
+   952696832,
+   2854486016,
+   445120512,
+   2323578880,
+   2979921920,
+   579272704,
+   2471755776
+  ],
+  "shared": true
+ },
+ {
+  "name": "s7c8_line_free_limits",
+  "form": "S7C8",
+  "load": "line",
+  "family": "free",
+  "point": "limits",
+  "src": "kernel/forms/s7c8_line.s",
+  "defsym": {
+   "S1": 952700891,
+   "S3": 2854575574,
+   "S5": 446901204,
+   "S7": 2325101337,
+   "C2": 2979916262,
+   "C4": 578937070,
+   "C6": 2460673193,
+   "C8": 40718158
+  },
+  "words": [
+   952700891,
+   2854575574,
+   2979916262,
+   578937070
+  ],
+  "bits": [
+   952700891,
+   2854575574,
+   446901204,
+   2325101337,
+   2979916262,
+   578937070,
+   2460673193,
+   40718158
+  ],
+  "shared": true
+ },
+ {
+  "name": "s7c8_line_t8_limits",
+  "form": "S7C8",
+  "load": "line",
+  "family": "top 8-bit",
+  "point": "limits",
+  "src": "kernel/forms/s7c8_line.s",
+  "defsym": {
+   "S1": 952700891,
+   "S3": 2854575571,
+   "S5": 446900872,
+   "S7": 2325086208,
+   "C2": 2979916262,
+   "C4": 578937085,
+   "C6": 2460673387,
+   "C8": 40566784
+  },
+  "words": [
+   952700891,
+   2854575571,
+   2979916262,
+   578937085
+  ],
+  "bits": [
+   952700891,
+   2854575571,
+   446900872,
+   2325086208,
+   2979916262,
+   578937085,
+   2460673387,
+   40566784
+  ],
+  "shared": true
+ },
+ {
+  "name": "s7c8_line_q_limits",
+  "form": "S7C8",
+  "load": "line",
+  "family": "quantized",
+  "point": "limits",
+  "src": "kernel/forms/s7c8_line.s",
+  "defsym": {
+   "S1": 952703346,
+   "S3": 2854617088,
+   "S5": 448004096,
+   "S7": 2343436288,
+   "C2": 2979921920,
+   "C4": 579076096,
+   "C6": 2462908416,
+   "C8": 53936128
+  },
+  "words": [
+   952703346,
+   2854617088,
+   2979921920,
+   579076096
+  ],
+  "bits": [
+   952703346,
+   2854617088,
+   448004096,
+   2343436288,
+   2979921920,
+   579076096,
+   2462908416,
+   53936128
+  ],
+  "shared": true
+ },
+ {
+  "name": "s7c8_line_a8_limits",
+  "form": "S7C8",
+  "load": "line",
+  "family": "all 8-bit",
+  "point": "limits",
+  "src": "kernel/forms/s7c8_line.s",
+  "defsym": {
+   "S1": 952696832,
+   "S3": 2854420480,
+   "S5": 440598528,
+   "S7": 108265472,
+   "C2": 2979921920,
+   "C4": 579076096,
+   "C6": 2463563776,
+   "C8": 50266112
+  },
+  "words": [
+   952696832,
+   2854420480,
+   2979921920,
+   579076096
+  ],
+  "bits": [
+   952696832,
+   2854420480,
+   440598528,
+   108265472,
+   2979921920,
+   579076096,
+   2463563776,
+   50266112
+  ],
+  "shared": true
+ },
+ {
+  "name": "s7c8_code_free_limits",
+  "form": "S7C8",
+  "load": "code",
+  "family": "free",
+  "point": "limits",
+  "src": "kernel/forms/s7c8_code.s",
+  "defsym": {
+   "S1": 952700891,
+   "S3": 2854575574,
+   "S5": 446901204,
+   "S7": 2325101337,
+   "C2": 2979916262,
+   "C4": 578937070,
+   "C6": 2460673193,
+   "C8": 40718158
+  },
+  "words": [],
+  "bits": [
+   952700891,
+   2854575574,
+   446901204,
+   2325101337,
+   2979916262,
+   578937070,
+   2460673193,
+   40718158
+  ],
+  "shared": true
+ },
+ {
+  "name": "s7c8_code_t8_limits",
+  "form": "S7C8",
+  "load": "code",
+  "family": "top 8-bit",
+  "point": "limits",
+  "src": "kernel/forms/s7c8_code.s",
+  "defsym": {
+   "S1": 952700891,
+   "S3": 2854575571,
+   "S5": 446900872,
+   "S7": 2325086208,
+   "C2": 2979916262,
+   "C4": 578937085,
+   "C6": 2460673387,
+   "C8": 40566784
+  },
+  "words": [],
+  "bits": [
+   952700891,
+   2854575571,
+   446900872,
+   2325086208,
+   2979916262,
+   578937085,
+   2460673387,
+   40566784
+  ],
+  "shared": true
+ },
+ {
+  "name": "s7c8_code_q_limits",
+  "form": "S7C8",
+  "load": "code",
+  "family": "quantized",
+  "point": "limits",
+  "src": "kernel/forms/s7c8_code.s",
+  "defsym": {
+   "S1": 952703346,
+   "S3": 2854617088,
+   "S5": 448004096,
+   "S7": 2343436288,
+   "C2": 2979921920,
+   "C4": 579076096,
+   "C6": 2462908416,
+   "C8": 53936128
+  },
+  "words": [],
+  "bits": [
+   952703346,
+   2854617088,
+   448004096,
+   2343436288,
+   2979921920,
+   579076096,
+   2462908416,
+   53936128
+  ],
+  "shared": true
+ },
+ {
+  "name": "s7c8_code_a8_limits",
+  "form": "S7C8",
+  "load": "code",
+  "family": "all 8-bit",
+  "point": "limits",
+  "src": "kernel/forms/s7c8_code.s",
+  "defsym": {
+   "S1": 952696832,
+   "S3": 2854420480,
+   "S5": 440598528,
+   "S7": 108265472,
+   "C2": 2979921920,
+   "C4": 579076096,
+   "C6": 2463563776,
+   "C8": 50266112
+  },
+  "words": [],
+  "bits": [
+   952696832,
+   2854420480,
+   440598528,
+   108265472,
+   2979921920,
+   579076096,
+   2463563776,
+   50266112
+  ],
+  "shared": true
+ },
+ {
+  "name": "t3_line_free_limits",
+  "form": "T3",
+  "load": "line",
+  "family": "free",
+  "point": "limits",
+  "src": "kernel/forms/t3_line.s",
+  "defsym": {
+   "T1": 944298270,
+   "T3": 691206000
+  },
+  "words": [
+   944298270,
+   691206000,
+   1065353216
+  ],
+  "bits": [
+   944298270,
+   691206000
+  ],
+  "shared": true
+ },
+ {
+  "name": "t3_line_t8_limits",
+  "form": "T3",
+  "load": "line",
+  "family": "top 8-bit",
+  "point": "limits",
+  "src": "kernel/forms/t3_line.s",
+  "defsym": {
+   "T1": 944298203,
+   "T3": 691208192
+  },
+  "words": [
+   944298203,
+   691208192,
+   1065353216
+  ],
+  "bits": [
+   944298203,
+   691208192
+  ],
+  "shared": true
+ },
+ {
+  "name": "t3_line_q_limits",
+  "form": "T3",
+  "load": "line",
+  "family": "quantized",
+  "point": "limits",
+  "src": "kernel/forms/t3_line.s",
+  "defsym": {
+   "T1": 944298203,
+   "T3": 691208192
+  },
+  "words": [
+   944298203,
+   691208192,
+   1065353216
+  ],
+  "bits": [
+   944298203,
+   691208192
+  ],
+  "shared": true
+ },
+ {
+  "name": "t3_line_a8_limits",
+  "form": "T3",
+  "load": "line",
+  "family": "all 8-bit",
+  "point": "limits",
+  "src": "kernel/forms/t3_line.s",
+  "defsym": {
+   "T1": 944308224,
+   "T3": 691011584
+  },
+  "words": [
+   944308224,
+   691011584,
+   1065353216
+  ],
+  "bits": [
+   944308224,
+   691011584
+  ],
+  "shared": true
+ },
+ {
+  "name": "t3_code_free_limits",
+  "form": "T3",
+  "load": "code",
+  "family": "free",
+  "point": "limits",
+  "src": "kernel/forms/t3_code.s",
+  "defsym": {
+   "T1": 944298270,
+   "T3": 691206000
+  },
+  "words": [],
+  "bits": [
+   944298270,
+   691206000
+  ],
+  "shared": true
+ },
+ {
+  "name": "t3_code_t8_limits",
+  "form": "T3",
+  "load": "code",
+  "family": "top 8-bit",
+  "point": "limits",
+  "src": "kernel/forms/t3_code.s",
+  "defsym": {
+   "T1": 944298203,
+   "T3": 691208192
+  },
+  "words": [],
+  "bits": [
+   944298203,
+   691208192
+  ],
+  "shared": true
+ },
+ {
+  "name": "t3_code_q_limits",
+  "form": "T3",
+  "load": "code",
+  "family": "quantized",
+  "point": "limits",
+  "src": "kernel/forms/t3_code.s",
+  "defsym": {
+   "T1": 944298203,
+   "T3": 691208192
+  },
+  "words": [],
+  "bits": [
+   944298203,
+   691208192
+  ],
+  "shared": true
+ },
+ {
+  "name": "t3_code_a8_limits",
+  "form": "T3",
+  "load": "code",
+  "family": "all 8-bit",
+  "point": "limits",
+  "src": "kernel/forms/t3_code.s",
+  "defsym": {
+   "T1": 944308224,
+   "T3": 691011584
+  },
+  "words": [],
+  "bits": [
+   944308224,
+   691011584
+  ],
+  "shared": true
+ },
+ {
+  "name": "t5_line_free_limits",
+  "form": "T5",
+  "load": "line",
+  "family": "free",
+  "point": "limits",
+  "src": "kernel/forms/t5_line.s",
+  "defsym": {
+   "T1": 944313652,
+   "T3": 690261083,
+   "T5": 439588479
+  },
+  "words": [
+   944313652,
+   690261083,
+   439588479,
+   1065353216
+  ],
+  "bits": [
+   944313652,
+   690261083,
+   439588479
+  ],
+  "shared": true
+ },
+ {
+  "name": "t5_line_t8_limits",
+  "form": "T5",
+  "load": "line",
+  "family": "top 8-bit",
+  "point": "limits",
+  "src": "kernel/forms/t5_line.s",
+  "defsym": {
+   "T1": 944311579,
+   "T3": 690301226,
+   "T5": 439746560
+  },
+  "words": [
+   944311579,
+   690301226,
+   439746560,
+   1065353216
+  ],
+  "bits": [
+   944311579,
+   690301226,
+   439746560
+  ],
+  "shared": true
+ },
+ {
+  "name": "t5_line_q_limits",
+  "form": "T5",
+  "load": "line",
+  "family": "quantized",
+  "point": "limits",
+  "src": "kernel/forms/t5_line.s",
+  "defsym": {
+   "T1": 944313045,
+   "T3": 690290688,
+   "T5": 439353344
+  },
+  "words": [
+   944313045,
+   690290688,
+   439353344,
+   1065353216
+  ],
+  "bits": [
+   944313045,
+   690290688,
+   439353344
+  ],
+  "shared": true
+ },
+ {
+  "name": "t5_line_a8_limits",
+  "form": "T5",
+  "load": "line",
+  "family": "all 8-bit",
+  "point": "limits",
+  "src": "kernel/forms/t5_line.s",
+  "defsym": {
+   "T1": 944308224,
+   "T3": 690552832,
+   "T5": 436207616
+  },
+  "words": [
+   944308224,
+   690552832,
+   436207616,
+   1065353216
+  ],
+  "bits": [
+   944308224,
+   690552832,
+   436207616
+  ],
+  "shared": true
+ },
+ {
+  "name": "t5_code_free_limits",
+  "form": "T5",
+  "load": "code",
+  "family": "free",
+  "point": "limits",
+  "src": "kernel/forms/t5_code.s",
+  "defsym": {
+   "T1": 944313652,
+   "T3": 690261083,
+   "T5": 439588479
+  },
+  "words": [],
+  "bits": [
+   944313652,
+   690261083,
+   439588479
+  ],
+  "shared": true
+ },
+ {
+  "name": "t5_code_t8_limits",
+  "form": "T5",
+  "load": "code",
+  "family": "top 8-bit",
+  "point": "limits",
+  "src": "kernel/forms/t5_code.s",
+  "defsym": {
+   "T1": 944311579,
+   "T3": 690301226,
+   "T5": 439746560
+  },
+  "words": [],
+  "bits": [
+   944311579,
+   690301226,
+   439746560
+  ],
+  "shared": true
+ },
+ {
+  "name": "t5_code_q_limits",
+  "form": "T5",
+  "load": "code",
+  "family": "quantized",
+  "point": "limits",
+  "src": "kernel/forms/t5_code.s",
+  "defsym": {
+   "T1": 944313045,
+   "T3": 690290688,
+   "T5": 439353344
+  },
+  "words": [],
+  "bits": [
+   944313045,
+   690290688,
+   439353344
+  ],
+  "shared": true
+ },
+ {
+  "name": "t5_code_a8_limits",
+  "form": "T5",
+  "load": "code",
+  "family": "all 8-bit",
+  "point": "limits",
+  "src": "kernel/forms/t5_code.s",
+  "defsym": {
+   "T1": 944308224,
+   "T3": 690552832,
+   "T5": 436207616
+  },
+  "words": [],
+  "bits": [
+   944308224,
+   690552832,
+   436207616
+  ],
+  "shared": true
+ },
+ {
+  "name": "t7_line_free_limits",
+  "form": "T7",
+  "load": "line",
+  "family": "free",
+  "point": "limits",
+  "src": "kernel/forms/t7_line.s",
+  "defsym": {
+   "T1": 944312171,
+   "T3": 690319798,
+   "T5": 438403418,
+   "T7": 188669889
+  },
+  "words": [
+   944312171,
+   690319798,
+   438403418,
+   1065353216
+  ],
+  "bits": [
+   944312171,
+   690319798,
+   438403418,
+   188669889
+  ],
+  "shared": true
+ },
+ {
+  "name": "t7_line_t8_limits",
+  "form": "T7",
+  "load": "line",
+  "family": "top 8-bit",
+  "point": "limits",
+  "src": "kernel/forms/t7_line.s",
+  "defsym": {
+   "T1": 944312163,
+   "T3": 690327917,
+   "T5": 438766969,
+   "T7": 172359680
+  },
+  "words": [
+   944312163,
+   690327917,
+   438766969,
+   1065353216
+  ],
+  "bits": [
+   944312163,
+   690327917,
+   438766969,
+   172359680
+  ],
+  "shared": true
+ },
+ {
+  "name": "t7_line_q_limits",
+  "form": "T7",
+  "load": "line",
+  "family": "quantized",
+  "point": "limits",
+  "src": "kernel/forms/t7_line.s",
+  "defsym": {
+   "T1": 944313789,
+   "T3": 690290688,
+   "T5": 438370304,
+   "T7": 186580992
+  },
+  "words": [
+   944313789,
+   690290688,
+   438370304,
+   1065353216
+  ],
+  "bits": [
+   944313789,
+   690290688,
+   438370304,
+   186580992
+  ],
+  "shared": true
+ },
+ {
+  "name": "t7_line_a8_limits",
+  "form": "T7",
+  "load": "line",
+  "family": "all 8-bit",
+  "point": "limits",
+  "src": "kernel/forms/t7_line.s",
+  "defsym": {
+   "T1": 944308224,
+   "T3": 690487296,
+   "T5": 437714944,
+   "T7": 128712704
+  },
+  "words": [
+   944308224,
+   690487296,
+   437714944,
+   1065353216
+  ],
+  "bits": [
+   944308224,
+   690487296,
+   437714944,
+   128712704
+  ],
+  "shared": true
+ },
+ {
+  "name": "t7_code_free_limits",
+  "form": "T7",
+  "load": "code",
+  "family": "free",
+  "point": "limits",
+  "src": "kernel/forms/t7_code.s",
+  "defsym": {
+   "T1": 944312171,
+   "T3": 690319798,
+   "T5": 438403418,
+   "T7": 188669889
+  },
+  "words": [],
+  "bits": [
+   944312171,
+   690319798,
+   438403418,
+   188669889
+  ],
+  "shared": true
+ },
+ {
+  "name": "t7_code_t8_limits",
+  "form": "T7",
+  "load": "code",
+  "family": "top 8-bit",
+  "point": "limits",
+  "src": "kernel/forms/t7_code.s",
+  "defsym": {
+   "T1": 944312163,
+   "T3": 690327917,
+   "T5": 438766969,
+   "T7": 172359680
+  },
+  "words": [],
+  "bits": [
+   944312163,
+   690327917,
+   438766969,
+   172359680
+  ],
+  "shared": true
+ },
+ {
+  "name": "t7_code_q_limits",
+  "form": "T7",
+  "load": "code",
+  "family": "quantized",
+  "point": "limits",
+  "src": "kernel/forms/t7_code.s",
+  "defsym": {
+   "T1": 944313789,
+   "T3": 690290688,
+   "T5": 438370304,
+   "T7": 186580992
+  },
+  "words": [],
+  "bits": [
+   944313789,
+   690290688,
+   438370304,
+   186580992
+  ],
+  "shared": true
+ },
+ {
+  "name": "t7_code_a8_limits",
+  "form": "T7",
+  "load": "code",
+  "family": "all 8-bit",
+  "point": "limits",
+  "src": "kernel/forms/t7_code.s",
+  "defsym": {
+   "T1": 944308224,
+   "T3": 690487296,
+   "T5": 437714944,
+   "T7": 128712704
+  },
+  "words": [],
+  "bits": [
+   944308224,
+   690487296,
+   437714944,
+   128712704
+  ],
+  "shared": true
+ }
+]
