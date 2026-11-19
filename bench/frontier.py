@@ -3,14 +3,18 @@
 
   uv run --with numpy --with matplotlib python3 bench/frontier.py [--readme]
 
-Kernels: the hand-written kernels and the generated kernels of the timing ROM
-(bench/micro; fit/forms.json, fit/variants-S5C4-builds.json,
-fit/hwsearch-S5C4-builds.json).
+Kernels: the kernels of kernel/ and Silas, and every point of the coefficient
+sweep (fit/sweep/) in every hand-written file of kernel/forms/ (one cache line,
+pure code), each with two functions and shared (only trig_sincos). A
+kernel/forms/ point equal to a kernel of kernel/ in all objectives is one row.
 
 Inputs (all in the repository):
-  bench/results/micro/run1-5.log   the timing ROM output, 5 runs (MICRO lines)
-  bench/results/micro/sizes.json   symbol sizes of the timing ROM
-  bench/results/micro/gen.json     the generated kernel names
+  bench/results/micro/layout1-5.log  the timing ROM output in 5 layouts (bench/micro/build.py --layout)
+  bench/results/micro/kernels.json   the timed kernel/forms/ kernels (bench/handforms.py list --select timing)
+  bench/results/micro/sizes.json     symbol sizes of the timing ROM
+The code of a file depends only on which coefficients are 8-bit. The script
+checks that each point has the same lui/ori pattern as its timed point; the
+cycles and sizes of the timed point are then those of the point.
 
 Accuracy: a float32 model of each kernel (the operations and their order in
 the assembly) gives sin(a) and sin(a + 0x4000) for all 65,536 angles. The
@@ -23,8 +27,8 @@ Objectives (lower is better):
   creep |U|         max |s² + c² - 1| for turns of 1 to 1092 steps (0 to 6 degrees):
                     a rotation applied once per frame changes the length by this factor
   max |U|           max |s² + c² - 1| over all angles
-  sincos cycles     CPU cycles per trig_sincos call (median of 5 runs, warm cache)
-  sin cycles        CPU cycles per trig_sin call (median of 5 runs, warm cache)
+  sincos cycles     CPU cycles per trig_sincos call (median of 5 layouts, warm cache)
+  sin cycles        CPU cycles per trig_sin call (median of 5 layouts, warm cache)
   cold bytes        bytes the two functions and the data move over the RDRAM bus when
                     none of them is cached: 32-byte lines of each function, plus 16 bytes
                     for a data line. A shared kernel counts its one function once.
@@ -100,6 +104,39 @@ def folded(kind, ks, kc):
     return sin
 
 
+def model(form, bits):
+    """float32 model of a kernel/forms/ kernel (fit/sweep.py forms) for all angles"""
+    import sweep as SW
+    kind, sp, cp = SW.spec(form)
+    if kind in ('poly', 'csqrt', 'ssqrt'):
+        return folded(kind, bits[:len(sp)], bits[len(sp):])
+    k = f32(bits)
+
+    def horner(x2):
+        h = k[-1] * np.ones_like(x2)
+        for c in k[-2::-1]:
+            h = h * x2 + c
+        return h
+
+    if kind == 'quad':
+        def sin(a):
+            t = (a & 0xFFFF) + 0x4000
+            x = ((t & 0x7FFF) - 0x4000).astype(F)
+            v = horner(x * x) * x
+            return np.where(t & 0x8000, -v, v).astype(F)
+        return sin
+
+    def sin(a):                       # T forms: octant fold, u ~ tan(x/2)
+        t = (a & 0xFFFF) + 0x2000
+        x = ((t & 0x3FFF) - 0x2000).astype(F)
+        u = horner(x * x) * x
+        u2 = u * u
+        d = F(1) / (F(1) + u2)
+        v = np.where(t & 0x4000, (F(1) - u2) * d, (u + u) * d)
+        return np.where(t & 0x8000, -v, v).astype(F)
+    return sin
+
+
 def crc(sin):
     s0, c0 = sin(A), sin(A + 0x4000)
     return f'{zlib.crc32(np.stack([s0, c0], 1).astype("<f4").tobytes()) & 0xFFFFFFFF:08x}'
@@ -156,36 +193,85 @@ def kernels():
     return out
 
 
+FORM_CLASS = {'poly': 'S, C polynomials', 'csqrt': 'C + sqrt', 'ssqrt': 'S + sqrt', 'quad': 'Q: one polynomial',
+              'tan': 'T: tangent half-angle'}
+LOAD_NAME = {'line': 'one cache line', 'code': 'pure code'}
+
+
+def code_ori(k):
+    """the coefficients that the code builds with lui + ori (not 8-bit, not in the data line)"""
+    import handforms as FO
+    _, line = FO.header(REPO / k['src'])
+    return tuple(n for n, v in k['defsym'].items() if n not in line and v & 0xFFFF)
+
+
 def rows():
+    import handforms as FO
     runs = []
     for i in range(1, 6):
-        runs.append({l.split()[1]: l.split()[2:] for l in (HERE / f'results/micro/run{i}.log').read_text().splitlines()
-                     if l.startswith('MICRO ')})
+        runs.append({l.split()[1]: l.split()[2:] for l in (HERE / f'results/micro/layout{i}.log').read_text()
+                     .splitlines() if l.startswith('MICRO ')})
     sizes = json.loads((HERE / 'results/micro/sizes.json').read_text())
-    gen = {key.replace(' ', '_'): fid for fid, key in json.loads((HERE / 'results/micro/gen.json').read_text())}
-    models = kernels()
+    med = lambda name, i: statistics.median(int(r[name][i]) for r in runs) / 100
     out = []
-    for name in runs[0]:
-        model, kind = models[name]
-        crcs = {r[name][2] for r in runs}
-        if crcs != {crc(model)}:
-            raise SystemExit(f'{name}: model CRC {crc(model)}, ROM {crcs}')
-        shared = name.endswith('+shared') or name == 'S5C4_shared'
-        base = name.removesuffix('+shared')
-        p = f'h_{base}' if kind == 'hand' else f'g_{gen[name]}'
-        sc, sn = sizes[f'{p}_sincos'], sizes[f'{p}_sin']
-        data = 16 if (name in ('S5C6_line', 'S5C4_line', 'S5C4_shared') or 'one_cache_line' in name) else 0
+
+    def finish(r, sc, sn, data, shared):
         lines = math.ceil(sc / 32) + (0 if shared else math.ceil(sn / 32))
-        r = {'name': HAND_NAME[name] if kind == 'hand' else name.replace('_', ' ') + ' (generated)', 'kind': kind,
-             'form': form(name), 'family': family(name),
-             'sincos cycles': statistics.median(int(r[name][0]) for r in runs) / 100,
-             'sin cycles': statistics.median(int(r[name][1]) for r in runs) / 100,
-             'sincos bytes': sc, 'sin bytes': 0 if shared else sn, 'data bytes': data,
-             'cold bytes': 32 * lines + data, 'crc': crcs.pop(), **metrics(model)}
+        r.update({'sincos bytes': sc, 'sin bytes': 0 if shared else sn, 'data bytes': data,
+                  'cold bytes': 32 * lines + data})
         r['meets limits'] = bool(r['never above 1'] and all(r[k] <= v if k != 'direction error' else r[k] < v
                                                             for k, v in LIMITS.items()))
         out.append(r)
-    return out
+
+    # the hand-written kernels of kernel/ and Silas
+    hand = {'Silas': ACC.silas()[0], 'Silas+shared': ACC.silas()[0], 'S5C6_line': ACC.s5c6(ACC.BFSK)[0],
+            'S5C6_code': ACC.s5c6(ACC.BFSK)[0], 'S5C6_quantized': ACC.s5c6(ACC.ONE)[0]}
+    for k in ('S5C4_line', 'S5C4_pure', 'S5C4_shared'):
+        hand[k] = folded('poly', S5C4_BITS[:3], S5C4_BITS[3:])
+    for name, model in hand.items():
+        if {r[name][2] for r in runs} != {crc(model)}:
+            raise SystemExit(f'{name}: model CRC {crc(model)}, ROM {[r[name][2] for r in runs]}')
+        shared = name.endswith('+shared') or name == 'S5C4_shared'
+        base = name.removesuffix('+shared')
+        data = 16 if name in ('S5C6_line', 'S5C4_line', 'S5C4_shared') else 0
+        r = {'name': HAND_NAME[name], 'kind': 'hand', 'group': 'kernel/', 'form': form(name),
+             'family': family(name), 'load': 'line' if data else 'code', 'structure': 'shared' if shared else 'two',
+             'sincos cycles': med(name, 0), 'sin cycles': med(name, 1), **metrics(model)}
+        finish(r, sizes[f'h_{base}_sincos'], sizes[f'h_{base}_sin'], data, shared)
+
+    # kernel/forms/: every point of fit/sweep/, in both load styles, with two functions or shared
+    timed = {}
+    for k in FO.kernels('timing'):
+        timed[(k['src'], k['family'])] = k
+    missing = []
+    for k in FO.kernels('all'):
+        t = timed[(k['src'], k['family'])]
+        tname = t['name'] if code_ori(k) == code_ori(t) else k['name']    # same code as the timed point?
+        if tname not in runs[0]:
+            missing.append(k['name'])
+            continue
+        if {r[tname][3] for r in runs} != {'0'}:
+            raise SystemExit(f'{tname}: sincos is not two sin calls')
+        model = globals()['model'](k['form'], k['bits'])
+        if tname == k['name'] and {r[tname][2] for r in runs} != {crc(model)}:
+            raise SystemExit(f'{tname}: model CRC differs from the ROM')
+        m = metrics(model)
+        import sweep as SW
+        cls = FORM_CLASS[SW.spec(k['form'])[0]]
+        for shared in (False, True):
+            n = tname + ('+shared' if shared else '')
+            r = {'name': f"{k['form']} {LOAD_NAME[k['load']]}{', shared' if shared else ''}, {k['family']}, "
+                         f"{k['point']}", 'kind': 'form', 'group': k['form'], 'form': cls, 'family': k['family'],
+                 'load': k['load'], 'structure': 'shared' if shared else 'two', 'point': k['point'],
+                 'coefficients': k['bits'], 'sincos cycles': med(n, 0), 'sin cycles': med(n, 1), **m}
+            finish(r, sizes[f"h_{tname}_sincos"], sizes[f"h_{tname}_sin"], 16 if k['words'] else 0, shared)
+    if missing:
+        (REPO / 'work/untimed.json').write_text(json.dumps(missing))
+        raise SystemExit(f'{len(missing)} points have code different from their timed point: work/untimed.json')
+    # a kernel/forms/ point equal to a kernel of kernel/ in all objectives is the same kernel: keep one row
+    key = lambda r: tuple(r[k] for k in OBJ) + (r['structure'],)
+    hand_keys = {key(r) for r in out if r['kind'] == 'hand'}
+    return [r for r in out if r['kind'] == 'hand' or key(r) not in hand_keys]
 
 
 def dominates(a, b, keys):
@@ -193,16 +279,25 @@ def dominates(a, b, keys):
 
 
 def rank(rs, keys, field='rank'):
-    left, r = list(rs), 1
-    while left:
-        front = [x for x in left if not any(dominates(o, x, keys) for o in left)]
-        for x in front:
-            x[field] = r
-        left = [x for x in left if x not in front]
-        r += 1
+    """non-dominated sorting (numpy): rank 1 = no other row equals or beats it in all keys and beats it in one"""
+    if not rs:
+        return
+    v = np.array([[r[k] for k in keys] for r in rs], dtype=np.float64)
+    left = np.arange(len(rs))
+    level = 1
+    while len(left):
+        x = v[left]
+        le = (x[:, None, :] <= x[None, :, :]).all(2)        # le[i, j]: i equals or beats j in all keys
+        lt = (x[:, None, :] < x[None, :, :]).any(2)
+        dom = (le & lt).any(0)                              # j is dominated by some i
+        for i in left[~dom]:
+            rs[i][field] = level
+        left = left[dom]
+        level += 1
 
 
-COL = {'S, C polynomials': '#1f77b4', 'C + sqrt': '#d62728', 'S + sqrt': '#2ca02c'}
+COL = {'S, C polynomials': '#1f77b4', 'C + sqrt': '#d62728', 'S + sqrt': '#2ca02c', 'Q: one polynomial': '#9467bd',
+       'T: tangent half-angle': '#8c564b'}
 MARK = {'free': 'o', 'top 8-bit': 's', 'quantized': 'D', 'all 8-bit': '^'}
 LOG = {'max error', 'direction error', 'creep |U|', 'max |U|'}
 
@@ -226,20 +321,24 @@ def plots(rs, out_par, out_mat):
     # parallel coordinates
     fig, ax = plt.subplots(figsize=(15, 8), dpi=120)
     xs = range(len(OBJ))
-    for r in sorted(rs, key=lambda r: -r['rank']):
+    layer = lambda r: (3 if r['name'] == 'Silas' else 2 if r.get('cost rank') == 1 else 1 if r['meets limits']
+                       else 0)
+    for r in sorted(rs, key=lambda r: (layer(r), -r['rank'])):
         ys = [norm(r, k) for k in OBJ]
-        if r['name'] in ('Silas',):
-            ax.plot(xs, ys, color='black', lw=3, zorder=5)
+        if r['name'] == 'Silas':
+            ax.plot(xs, ys, color='black', lw=3, zorder=6)
             ax.annotate('Silas', (len(OBJ) - 1, ys[-1]), xytext=(6, 0), textcoords='offset points', fontsize=9,
                         fontweight='bold', va='center')
+        elif r.get('cost rank') == 1:
+            ax.plot(xs, ys, color=COL[r['form']], lw=3, zorder=5)
+            ax.annotate(r['name'], (len(OBJ) - 1, ys[-1]), xytext=(6, 0), textcoords='offset points',
+                        fontsize=8, va='center', color=COL[r['form']], fontweight='bold')
         elif r['meets limits']:
-            ax.plot(xs, ys, color=COL[r['form']], lw=2.2, zorder=4, ls='-' if r['rank'] == 1 else '--')
-            ax.annotate(r['name'], (len(OBJ) - 1, ys[-1]), xytext=(6, 0), textcoords='offset points', fontsize=7,
-                        va='center', color=COL[r['form']])
+            ax.plot(xs, ys, color='#08306b', lw=1.0, alpha=.8, zorder=4)
         elif r['rank'] == 1:
-            ax.plot(xs, ys, color=COL[r['form']], lw=.8, alpha=.35, zorder=3)
+            ax.plot(xs, ys, color=COL[r['form']], lw=.5, alpha=.18, zorder=3)
         else:
-            ax.plot(xs, ys, color='#bbbbbb', lw=.7, alpha=.6, zorder=2)
+            ax.plot(xs, ys, color='#999999', lw=.4, alpha=.08, zorder=2)
     for i, k in enumerate(OBJ):
         ax.axvline(i, color='#444', lw=.8)
         lab = (lambda v: f'{10 ** v:.1e}') if k in LOG else (lambda v: f'{v:.0f}')
@@ -254,14 +353,14 @@ def plots(rs, out_par, out_mat):
     ax.set_ylim(-.1, 1.1)
     for s in ('top', 'right', 'left'):
         ax.spines[s].set_visible(False)
-    ax.legend(handles=[Line2D([], [], color='black', lw=3, label='Silas')] +
-              [Line2D([], [], color=c, lw=2.2, label=f'within the gameplay limits: {f}') for f, c in COL.items()
-               if any(r['meets limits'] and r['form'] == f for r in rs)] +
-              [Line2D([], [], color='#555', lw=2.2, ls='--', label='within the limits, rank 2 or higher'),
-               Line2D([], [], color='#1f77b4', lw=.8, alpha=.35, label='rank 1, outside the limits'),
-               Line2D([], [], color='#bbbbbb', lw=1, label='rank 2 or higher, outside the limits'),
+    ax.legend(handles=[Line2D([], [], color='black', lw=3, label='Silas'),
+                       Line2D([], [], color='#1f77b4', lw=3, label='Pareto set within the gameplay limits'),
+                       Line2D([], [], color='#08306b', lw=1, label='other kernels within the gameplay limits')] +
+              [Line2D([], [], color=c, lw=1.5, alpha=.5, label=f'Pareto set (rank 1), outside the limits: {f}')
+               for f, c in COL.items()] +
+              [Line2D([], [], color='#999999', lw=1, alpha=.4, label='rank 2 or higher, outside the limits'),
                Line2D([], [], color='#ff7f0e', lw=3, label='gameplay limit')],
-              loc='upper center', bbox_to_anchor=(.45, -.07), ncol=4, fontsize=9, frameon=False)
+              loc='upper center', bbox_to_anchor=(.45, -.07), ncol=3, fontsize=9, frameon=False)
     ax.set_title('All kernels on seven objectives (lower is better on each axis; axis ends: min and max)', fontsize=12)
     fig.tight_layout()
     fig.savefig(out_par)
@@ -276,9 +375,15 @@ def plots(rs, out_par, out_mat):
             if j >= i:
                 ax.axis('off')
                 continue
-            fr = [r for r in rs if not any(dominates(o, r, [kx, ky]) for o in rs)]
+            order = sorted(range(len(rs)), key=lambda q: (rs[q][kx], rs[q][ky]))
+            fr, best = [], math.inf
+            for q in order:                                  # 2-D Pareto front: running minimum of y
+                if rs[q][ky] < best:
+                    fr.append(rs[q])
+                    best = rs[q][ky]
+            fr_ids = {id(r) for r in fr}
             for r in sorted(rs, key=lambda r: r['name'] == 'Silas'):     # Silas last, on top
-                on, silas = r in fr, r['name'] == 'Silas'
+                on, silas = id(r) in fr_ids, r['name'] == 'Silas'
                 ax.scatter(max(r[kx], floor.get(kx, 0)), max(r[ky], floor.get(ky, 0)),
                            s=70 if silas else 40 if on else 14, marker='*' if silas else MARK[r['family']],
                            color='black' if silas else COL[r['form']],
@@ -310,6 +415,74 @@ def plots(rs, out_par, out_mat):
     fig.tight_layout(rect=(0, 0, 1, .985))
     fig.savefig(out_mat)
     plt.close(fig)
+
+
+def plot_forms(rs, path):
+    """one panel per form: all points of its parameter sweep (coefficient trade-off, coefficient family,
+    load style, function structure); the form's own Pareto set on the seven objectives outlined"""
+    import matplotlib
+    matplotlib.use('Agg')
+    import matplotlib.pyplot as plt
+    from matplotlib.lines import Line2D
+    groups = [g for g in dict.fromkeys(r['group'] for r in rs if r['kind'] == 'form')]
+    n = len(groups)
+    cols = 4
+    fig, axes = plt.subplots(math.ceil(n / cols), cols, figsize=(20, 4.6 * math.ceil(n / cols)), dpi=100)
+    fcol = {'free': '#1f77b4', 'top 8-bit': '#2ca02c', 'quantized': '#ff7f0e', 'all 8-bit': '#d62728'}
+    silas = next(r for r in rs if r['name'] == 'Silas')
+    for ax, g in zip(axes.flat, groups):
+        sub = [r for r in rs if r['group'] == g]
+        rank(sub, OBJ, 'form rank')
+        for r in sub:
+            on = r['form rank'] == 1
+            ax.scatter(r['max error'], max(r['max |U|'], 1e-9), s=34 if on else 12,
+                       marker='s' if r['load'] == 'line' else 'o', facecolor=fcol[r['family']] if on else 'none',
+                       edgecolor=fcol[r['family']], alpha=1 if on else .5, lw=.8)
+        ax.scatter(silas['max error'], silas['max |U|'], marker='*', s=120, color='black', zorder=5)
+        ax.axhline(LIMITS['max |U|'], color='#888', lw=.8, ls='--')
+        ax.set_xscale('log')
+        ax.set_yscale('log')
+        best = min(sub, key=lambda r: r['sincos cycles'])
+        cyc = sorted({r['sincos cycles'] for r in sub if r['structure'] == 'two'})
+        cold = sorted({r['cold bytes'] for r in sub})
+        nlim = sum(r['meets limits'] for r in sub)
+        ax.set_title(f"{g}: sincos {cyc[0]:.1f}–{cyc[-1]:.1f} cycles, cold {cold[0]}–{cold[-1]} B\n"
+                     f"{len(sub)} kernels, {sum(r['form rank'] == 1 for r in sub)} in its Pareto set, "
+                     f"{nlim} within the gameplay limits", fontsize=9)
+        ax.tick_params(labelsize=7)
+        ax.grid(True, which='major', alpha=.25)
+        ax.set_xlabel('max error', fontsize=8)
+        ax.set_ylabel('max |s²+c²−1|', fontsize=8)
+    for ax in list(axes.flat)[n:]:
+        ax.axis('off')
+    handles = [Line2D([], [], marker='o', ls='', color=c, label=f'coefficients: {f}') for f, c in fcol.items()] + \
+              [Line2D([], [], marker='s', ls='', color='#777', label='one cache line'),
+               Line2D([], [], marker='o', ls='', color='#777', label='pure code'),
+               Line2D([], [], marker='o', ls='', markerfacecolor='none', markeredgecolor='#777',
+                      label='outside the Pareto set of the form'),
+               Line2D([], [], marker='*', ls='', color='black', markersize=12, label='Silas'),
+               Line2D([], [], color='#888', ls='--', label='gameplay limit of max |s²+c²−1|')]
+    fig.legend(handles=handles, loc='lower center', ncol=5, fontsize=11, frameon=False)
+    fig.suptitle('Each form: all points of its parameter sweep. Filled: the Pareto set of the form on the seven '
+                 'objectives.', fontsize=14)
+    fig.tight_layout(rect=(0, .04, 1, .97))
+    fig.savefig(path)
+    plt.close(fig)
+
+
+def form_table(rs):
+    out = ['| Form | Kernels | In the Pareto set of all kernels | Within the gameplay limits | Max error (min) | '
+           'Max \\|s²+c²−1\\| (min) | Creep (min) | `trig_sincos` cycles | `trig_sin` cycles | Cold bytes |',
+           '|---|---|---|---|---|---|---|---|---|---|']
+    for g in dict.fromkeys(r['group'] for r in rs if r['kind'] == 'form'):
+        sub = [r for r in rs if r['group'] == g]
+        two = [r for r in sub if r['structure'] == 'two']
+        rng = lambda k, f, rows=sub: f'{f.format(min(r[k] for r in rows))}–{f.format(max(r[k] for r in rows))}'
+        out.append(f"| {g} | {len(sub)} | {sum(r['rank'] == 1 for r in sub)} | {sum(r['meets limits'] for r in sub)} | "
+                   f"{min(r['max error'] for r in sub):.1e} | {min(r['max |U|'] for r in sub):.1e} | "
+                   f"{min(r['creep |U|'] for r in sub):.1e} | {rng('sincos cycles', '{:.1f}', two)} | "
+                   f"{rng('sin cycles', '{:.1f}', two)} | {rng('cold bytes', '{}')} |")
+    return '\n'.join(out)
 
 
 def fmt(v, k):
@@ -344,6 +517,10 @@ def main():
     rank(feasible, COST, 'cost rank')
     (REPO / 'fit/frontier.json').write_text(json.dumps(rs, indent=1))
     plots(rs, REPO / 'fit/frontier-parallel.png', REPO / 'fit/frontier-matrix.png')
+    plot_forms(rs, REPO / 'fit/frontier-forms.png')
+    (REPO / 'fit/frontier-pareto.md').write_text(
+        '# Pareto set on all seven objectives\n\nGenerated by bench/frontier.py from bench/results/micro/ and '
+        f'fit/sweep/. {sum(r["rank"] == 1 for r in rs)} of {len(rs)} kernels.\n\n' + table(rs, lambda r: r['rank'] == 1) + '\n')
     n1 = sum(r['rank'] == 1 for r in rs)
     nc = sum(r.get('cost rank') == 1 for r in rs)
     block = (f'Kernels: {len(rs)}. Within the gameplay limits: {len(feasible)}. For each kernel, the CRC of the '
@@ -351,8 +528,8 @@ def main():
              f'**Pareto set within the gameplay limits.** The kernels within the limits that no other kernel within '
              f'the limits equals or beats in the three costs (sincos cycles, sin cycles, cold bytes) and beats in '
              f'one ({nc} kernels):\n\n{table(rs, lambda r: r.get("cost rank") == 1)}\n\n'
-             f'<details><summary>Pareto set on all seven objectives ({n1} of {len(rs)} kernels)</summary>\n\n'
-             f'{table(rs, lambda r: r["rank"] == 1)}\n\n</details>\n')
+             f'The Pareto set on all seven objectives has {n1} of the {len(rs)} kernels: '
+             f'[`fit/frontier-pareto.md`](fit/frontier-pareto.md). All values: [`fit/frontier.json`](fit/frontier.json).\n')
     print(block)
     hand = [r for r in rs if r['kind'] == 'hand']
     acc = ['| Kernel | Max error | Max direction error (1/65536 turn) | Creep: max \\|s²+c²−1\\|, turns of 0° to 6° '
@@ -371,7 +548,8 @@ def main():
     if args.readme:
         p = REPO / 'README.md'
         s = p.read_text()
-        for name, body in (('frontier', block), ('accuracy', '\n'.join(acc) + '\n'), ('cost', '\n'.join(cost) + '\n')):
+        for name, body in (('frontier', block), ('accuracy', '\n'.join(acc) + '\n'), ('cost', '\n'.join(cost) + '\n'),
+                           ('forms', form_table(rs) + '\n')):
             a, b = f'<!-- gen:{name} -->\n', f'<!-- /gen:{name} -->'
             s = s[:s.index(a) + len(a)] + body + s[s.index(b):]
         p.write_text(s)

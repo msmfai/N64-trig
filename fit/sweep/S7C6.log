@@ -1,0 +1,6 @@
+S7C6     free       limits met     E 1.55e-07 U 1.51e-07 creep 5.99e-08 dir 0.00 | E range 8.1e-08..4.1e-07
+S7C6     top 8-bit  limits met     E 1.35e-07 U 1.82e-07 creep 5.95e-08 dir 0.00 | E range 9.4e-08..4.1e-07
+/private/tmp/claude-501/-Users-marinmoran-gitlab-smfmarin-outreach-and-marketing-clock-town-64-worktrees-trig-research/c464112d-1abe-4c82-b4bd-9a01c0ea1e7d/scratchpad/N64-trig/fit/sweep.py:84: RuntimeWarning: invalid value encountered in multiply
+  h = ks[-1] * np.ones_like(x2)
+S7C6     quantized  limits not met E 3.75e-05 U 2.00e-05 creep 1.93e-06 dir 0.42 | E range 3.3e-05..6.1e-04
+S7C6     all 8-bit  limits not met E 5.86e-05 U 6.22e-05 creep 1.20e-05 dir 0.55 | E range 5.9e-05..4.0e-04

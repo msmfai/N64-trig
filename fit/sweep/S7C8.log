@@ -1,0 +1,4 @@
+S7C8     free       limits met     E 5.76e-08 U 1.38e-07 creep 5.97e-08 dir 0.00 | E range 5.8e-08..3.9e-06
+S7C8     top 8-bit  limits met     E 5.94e-08 U 1.43e-07 creep 5.97e-08 dir 0.00 | E range 5.9e-08..1.3e-06
+S7C8     quantized  limits not met E 4.20e-05 U 1.97e-05 creep 1.91e-06 dir 0.51 | E range 2.5e-05..2.0e-04
+S7C8     all 8-bit  limits not met E 7.73e-05 U 6.09e-05 creep 1.20e-05 dir 0.81 | E range 5.9e-05..1.5e-03

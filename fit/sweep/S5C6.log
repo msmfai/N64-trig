@@ -1,0 +1,4 @@
+S5C6     free       limits met     E 7.25e-07 U 1.91e-06 creep 5.94e-08 dir 0.01 | E range 5.9e-07..8.2e-06
+S5C6     top 8-bit  limits met     E 1.51e-06 U 3.21e-06 creep 5.95e-08 dir 0.01 | E range 6.3e-07..1.6e-05
+S5C6     quantized  limits not met E 5.50e-05 U 1.79e-05 creep 8.23e-07 dir 0.61 | E range 2.7e-05..1.8e-04
+S5C6     all 8-bit  limits not met E 5.88e-05 U 6.94e-05 creep 1.20e-05 dir 0.55 | E range 5.9e-05..1.2e-03

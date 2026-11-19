@@ -1,0 +1,4 @@
+Q5       free       limits not met E 1.52e-04 U 8.69e-05 creep 8.69e-05 dir 1.78 | E range 1.1e-04..1.6e-04
+Q5       top 8-bit  limits not met E 1.40e-04 U 1.03e-04 creep 1.03e-04 dir 1.64 | E range 9.8e-05..1.4e-04
+Q5       quantized  limits not met E 1.70e-04 U 1.71e-04 creep 1.33e-04 dir 1.75 | E range 1.7e-04..5.1e-04
+Q5       all 8-bit  limits not met E 2.96e-04 U 5.10e-04 creep 9.26e-05 dir 1.61 | E range 3.0e-04..5.0e-04

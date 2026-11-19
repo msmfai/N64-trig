@@ -1,0 +1,4 @@
+C4+sqrt  free       limits not met E 1.92e-04 U 6.82e-08 creep 2.99e-08 dir 2.00 | E range 1.9e-04..1.9e-04
+C4+sqrt  top 8-bit  limits not met E 1.92e-04 U 6.80e-08 creep 2.99e-08 dir 2.00 | E range 1.9e-04..1.9e-04
+C4+sqrt  quantized  limits not met E 1.92e-04 U 6.80e-08 creep 2.99e-08 dir 2.00 | E range 1.9e-04..5.0e-04
+C4+sqrt  all 8-bit  limits not met E 1.92e-04 U 6.78e-08 creep 2.99e-08 dir 2.00 | E range 1.9e-04..3.3e-04
